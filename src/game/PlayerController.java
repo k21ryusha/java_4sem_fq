@@ -4,7 +4,7 @@ import components.*;
 import economic.MarketService;
 import race_weekend.RaceResult;
 import staff.MainDriver;
-import staff.Staff;
+import staff.*;
 import staff.TeamManager;
 
 import java.util.ArrayList;
@@ -32,22 +32,32 @@ public class PlayerController implements IntInput {
     }
 
     public void buyComponents() {
-        List<Component> offers = marketService.generateComponentOffers();
-        System.out.println("\n--- Рынок компонентов ---");
-        for (int i = 0; i < offers.size(); i++) {
-            Component c = offers.get(i);
-            System.out.printf("%d) %s | цена: %d | качество: %d%n", i + 1, describeComponent(c), c.getPrice(), c.getQuality());
+            while (true) {
+                List<Component> offers = marketService.generateComponentOffers();
+                System.out.println("\n--- Рынок компонентов ---");
+                for (int i = 0; i < offers.size(); i++) {
+                    Component c = offers.get(i);
+                    System.out.printf("%d) %s | цена: %d | качество: %d%n", i + 1, describeComponent(c), c.getPrice(), c.getQuality());
+                }
+                System.out.println("0) Выход из магазина");
+                int choice = readInt("Что купить: ");
+                if (choice == 0) {
+                    System.out.println("Вы вышли из магазина комплектующих.");
+                    return;
+                }
+                if (choice < 0 || choice > offers.size()) {
+                    System.out.println("Нет такого пункта.");
+                    continue;
+                }
+
+                Component selected = offers.get(choice - 1);
+                if (!player.spend(selected.getPrice())) {
+                    System.out.println("Недостаточно бюджета.");
+                    continue;
+                }
+                player.getInventory().add(selected);
+                System.out.println("Куплен компонент: " + describeComponent(selected));
         }
-        System.out.println("0) Назад");
-        int choice = readInt("Что купить: ");
-        if (choice <= 0 || choice > offers.size()) return;
-        Component selected = offers.get(choice - 1);
-        if (!player.spend(selected.getPrice())) {
-            System.out.println("Недостаточно бюджета.");
-            return;
-        }
-        player.getInventory().add(selected);
-        System.out.println("Куплен компонент: " + describeComponent(selected));
     }
 
     public void assembleCar() {
@@ -81,23 +91,85 @@ public class PlayerController implements IntInput {
         player.getInventory().remove(sus);player.getInventory().remove(aero);player.getInventory().remove(tyres);
         System.out.println("Болид собран: " + car.getName());
     }
+    public void hireStaffMenu() {
+        while (true) {
+            System.out.println("\n--- Покупка персонала ---");
+            System.out.println("1) Технический директор");
+            System.out.println("2) Инженер");
+            System.out.println("3) Механик");
+            System.out.println("4) Электронщик");
+            System.out.println("5) Принципал");
+            System.out.println("0) Назад");
+
+            int choice = readInt("Выберите категорию: ");
+            switch (choice) {
+                case 1 -> hireTechnicalDirector();
+                case 2 -> hireEngineer();
+                case 3 -> hireMechanic();
+                case 4 -> hireElectronicsEngineer();
+                case 5 -> hirePrincipal();
+                case 0 -> { return; }
+                default -> System.out.println("Нет такого пункта.");
+            }
+        }
+    }
+    public void hireTechnicalDirector() {
+        List<TechnicalDirector> candidates = marketService.generateTechnicalDirectorCandidates();
+        TechnicalDirector selected = chooseStaff("технического директора", candidates);
+        if (selected == null) return;
+        if (!player.spend(selected.getSalary())) { System.out.println("Недостаточно бюджета."); return; }
+        player.setTechnicalDirector(selected);
+        player.getEngineers().add(selected);
+        System.out.println("Нанят технический директор: " + selected.getName());
+    }
 
     public void hireEngineer() {
-        List<Staff> candidates = marketService.generateEngineerCandidates();
-        System.out.println("\n--- Школа персонала ---");
+        List<Engineer> candidates = marketService.generateEngineerCandidates();
+        Engineer selected = chooseStaff("инженера", candidates);
+        if (selected == null) return;
+        if (!player.spend(selected.getSalary())) { System.out.println("Недостаточно бюджета."); return; }
+        player.getEngineers().add(selected);
+        System.out.println("Нанят инженер: " + selected.getName());
+    }
+
+    public void hireMechanic() {
+        List<Mechanic> candidates = marketService.generateMechanicCandidates();
+        Mechanic selected = chooseStaff("механика", candidates);
+        if (selected == null) return;
+        if (!player.spend(selected.getSalary())) { System.out.println("Недостаточно бюджета."); return; }
+        player.getEngineers().add(selected);
+        System.out.println("Нанят механик: " + selected.getName());
+    }
+
+    public void hireElectronicsEngineer() {
+        List<ElectronicsEngineer> candidates = marketService.generateElectronicsEngineerCandidates();
+        ElectronicsEngineer selected = chooseStaff("электронщика", candidates);
+        if (selected == null) return;
+        if (!player.spend(selected.getSalary())) { System.out.println("Недостаточно бюджета."); return; }
+        player.getEngineers().add(selected);
+        System.out.println("Нанят электронщик: " + selected.getName());
+    }
+
+    public void hirePrincipal() {
+        List<Principal> candidates = marketService.generatePrincipalCandidates();
+        Principal selected = chooseStaff("принципала", candidates);
+        if (selected == null) return;
+        if (!player.spend(selected.getSalary())) { System.out.println("Недостаточно бюджета."); return; }
+        player.setPrincipal(selected);
+        System.out.println("Нанят принципал: " + selected.getName());
+    }
+
+    private <T extends Staff> T chooseStaff(String role, List<T> candidates) {
+        System.out.println("\n--- Школа персонала: " + role + " ---");
         for (int i = 0; i < candidates.size(); i++) {
             Staff e = candidates.get(i);
             System.out.printf("%d) %s | skill=%d | контракт=%d%n", i + 1, e.getName(), e.getSkill(), e.getSalary());
         }
         System.out.println("0) Назад");
         int choice = readInt("Кого нанять: ");
-        if (choice <= 0 || choice > candidates.size()) return;
-        Staff selected = candidates.get(choice - 1);
-        if (!player.spend(selected.getSalary())) { System.out.println("Недостаточно бюджета."); return; }
-        player.getEngineers().add(selected);
-        System.out.println("Нанят инженер: " + selected.getName());
+        if (choice <= 0 || choice > candidates.size()) return null;
+        return candidates.get(choice - 1);
     }
-
     public void hirePilot() {
         List<MainDriver> candidates = marketService.generateDriverCandidates();
         System.out.println("\n--- Школа пилотов ---");
@@ -146,9 +218,9 @@ public class PlayerController implements IntInput {
     }
 
     private String describeComponent(Component c) {
-        if (c instanceof Engine e) return "Двигатель " + e.getName() + " (" + e.getType() + ", power=" + e.getPower() + ")";
+        if (c instanceof Engine e) return "Двигатель " + e.getName() + " (" + e.getType() + ", power=" + e.getPower() +", engine_weight =" + e.getMass() + ")";
         if (c instanceof Transmission t) return "Трансмиссия " + t.getName() + " (для " + t.getCompatibleType() + ")";
-        if (c instanceof Chassis ch) return "Шасси " + ch.getName() + " (class=" + ch.getChassisClass() + ")";
+        if (c instanceof Chassis ch) return "Шасси " + ch.getName() + " (class=" + ch.getChassisClass() + ", max_2engine_weight =" + ch.getMaxEngineMass()+")";
         if (c instanceof Suspension s) return "Подвеска " + s.getName() + " (для " + s.getCompatibleClass() + ")";
         if (c instanceof Aerodynamics a) return "Аэродинамика " + a.getName() + " (downforce=" + a.getDownforce() + ")";
         if (c instanceof Tyres t) return "Шины " + t.getName() + " (" + t.getCompound() + ")";

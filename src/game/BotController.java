@@ -16,10 +16,16 @@ public class BotController {
     }
 
     private void initBots() {
-        botTeams.add(new TeamManager("Red Nebula", 800_000, rand(12, 28)));
-        botTeams.add(new TeamManager("TurboFox", 760_000, rand(10, 24)));
-        botTeams.add(new TeamManager("NorthWind GP", 820_000, rand(13, 29)));
-        botTeams.add(new TeamManager("AeroPulse", 780_000, rand(11, 27)));
+        botTeams.add(new TeamManager("Ferrari", 980_000, rand(18, 30)));
+        botTeams.add(new TeamManager("Mercedes", 970_000, rand(18, 30)));
+        botTeams.add(new TeamManager("McLaren", 960_000, rand(17, 29)));
+        botTeams.add(new TeamManager("Aston Martin", 920_000, rand(15, 27)));
+        botTeams.add(new TeamManager("Alpine", 900_000, rand(14, 26)));
+        botTeams.add(new TeamManager("Williams", 890_000, rand(13, 25)));
+        botTeams.add(new TeamManager("Racing Bulls", 880_000, rand(13, 24)));
+        botTeams.add(new TeamManager("Haas", 870_000, rand(12, 23)));
+        botTeams.add(new TeamManager("Audi", 910_000, rand(15, 27)));
+        botTeams.add(new TeamManager("Cadillac", 905_000, rand(14, 26)));
     }
 
     public List<TeamManager> getBotTeams() { return botTeams; }
