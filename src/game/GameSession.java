@@ -20,7 +20,7 @@ public class GameSession {
 
     private final Map<String, Integer> driverPoints = new HashMap<>();
     private final Map<String, Integer> teamPoints = new HashMap<>();
-    private final Map<String, String> teamDrivers = new HashMap<>();
+    private final Map<String, List<String>> teamDrivers = new HashMap<>();
 
     private final PlayerController playerController;
     private final BotController botController;
@@ -112,8 +112,8 @@ public class GameSession {
     }
 
     private void startRaceWeekend() {
-        if (player.getCars().isEmpty() || player.getDrivers().isEmpty() || player.getEngineers().isEmpty()) {
-            System.out.println("Минимальные требования не выполнены: нужен болид, пилот и минимум 1 инженер.");
+        if (player.getCars().size() < 2 || player.getDrivers().size() < 2 || player.getEngineers().size() < 2) {
+            System.out.println("Минимальные требования не выполнены: нужно 2 болида, 2 пилота и минимум 2 инженера.");
             return;
         }
 
@@ -128,9 +128,21 @@ public class GameSession {
         runPractice("Практика 2", track);
         runPractice("Практика 3", track);
 
-        Map<String, Double> qualiTimes = runQualifying(track);
+        Map<MainDriver, Car> weekendLineup = chooseWeekendLineup();
+        if (weekendLineup.size() < 2) {
+            System.out.println("Для этапа необходимо выбрать двух пилотов и два разных исправных болида.");
+            return;
+        }
+
+        for (Car car : weekendLineup.values()) {
+            incidentService.preRaceMaintenance(player, car, playerController);
+        }
+
+        Weather weekendWeather = Weather.values()[random.nextInt(Weather.values().length)];
+        Map<String, Double> qualiTimes = runQualifying(track, weekendLineup, weekendWeather);
+
         parcFermeLocked = true;
-        runRace(track, qualiTimes);
+        runRace(track, qualiTimes, weekendLineup, weekendWeather);
 
         championshipRound++;
         if (championshipRound % tracks.size() == 0) {
@@ -146,31 +158,28 @@ public class GameSession {
         System.out.println("Лучшее время сессии: " + formatLap(base));
     }
 
-    private Map<String, Double> runQualifying(Track track) {
+    private Map<String, Double> runQualifying(Track track, Map<MainDriver, Car> weekendLineup, Weather weather) {
         System.out.println("\n--- Квалификация ---");
-        Car car = playerController.choose("болид", player.getCars());
-        if (car == null || !car.operational()) {
-            System.out.println("Болид недоступен.");
-            return new HashMap<>();
-        }
-        MainDriver playerDriver = playerController.choose("пилота", player.getDrivers());
-        if (playerDriver == null) return new HashMap<>();
-
-        Weather weather = Weather.values()[random.nextInt(Weather.values().length)];
         System.out.println("Погода на трассе: " + weather.getTitle());
-
         Map<String, Double> quali = new HashMap<>();
-        double playerRaceTime = raceSimulator.simulateRaceTime(player, car, playerDriver, track, weather);
-        double playerQuali = playerRaceTime / track.getLaps() * (0.975 + random.nextDouble() * 0.01);
-        quali.put(playerDriver.getName() + " (" + player.getTeamName() + ")", playerQuali);
 
+        for (Map.Entry<MainDriver, Car> lineupEntry : weekendLineup.entrySet()) {
+            MainDriver playerDriver = lineupEntry.getKey();
+            Car car = lineupEntry.getValue();
+            double playerRaceTime = raceSimulator.simulateRaceTime(player, car, playerDriver, track, weather);
+            double playerQuali = playerRaceTime / track.getLaps() * (0.975 + random.nextDouble() * 0.01);
+            quali.put(playerDriver.getName() + " (" + player.getTeamName() + ")", playerQuali);
+        }
 
         int idx = 0;
         for (TeamManager bot : botController.getBotTeams()) {
             double botRaceTime = raceSimulator.generateBotRaceTime(bot, track, weather);
             double q = botRaceTime / track.getLaps() * (0.972 + random.nextDouble() * 0.013);
-            String botDriver = teamDrivers.getOrDefault(bot.getTeamName(), "BOT-" + (++idx));
-            quali.put(botDriver + " (" + bot.getTeamName() + ")", q);
+            List<String> botDrivers = teamDrivers.getOrDefault(bot.getTeamName(), List.of("BOT-" + (++idx), "BOT-" + (++idx)));
+            for (String botDriver : botDrivers) {
+                double driverOffset = 0.998 + random.nextDouble() * 0.01;
+                quali.put(botDriver + " (" + bot.getTeamName() + ")", q * driverOffset);
+            }
         }
 
         List<Map.Entry<String, Double>> grid = quali.entrySet().stream().sorted(Map.Entry.comparingByValue()).toList();
@@ -181,9 +190,16 @@ public class GameSession {
         return quali;
     }
 
-    private void runRace(Track track, Map<String, Double> quali) {
+    private void runRace(Track track, Map<String, Double> quali, Map<MainDriver, Car> weekendLineup, Weather weather) {
         if (quali.isEmpty()) return;
         System.out.println("\n--- Гонка ---");
+
+        Map<String, Car> playerCarsByEntry = new HashMap<>();
+        for (Map.Entry<MainDriver, Car> entry : weekendLineup.entrySet()) {
+            String driverEntry = entry.getKey().getName() + " (" + player.getTeamName() + ")";
+            playerCarsByEntry.put(driverEntry, entry.getValue());
+            incidentService.preRaceMaintenance(player, entry.getValue(), playerController);
+        }
 
         List<Map.Entry<String, Double>> grid = quali.entrySet().stream().sorted(Map.Entry.comparingByValue()).toList();
         Map<String, Double> raceTimes = new HashMap<>();
@@ -194,8 +210,23 @@ public class GameSession {
             double qLap = grid.get(i).getValue();
             double race = qLap * track.getLaps() * (1.015 + random.nextDouble() * 0.02) + i * 0.75;
             double fl = qLap * (0.985 + random.nextDouble() * 0.015);
+
+            Car playerCar = playerCarsByEntry.get(driverTeam);
+            if (playerCar != null) {
+                if (incidentService.checkIncident(playerCar)) {
+                    race += 25 + random.nextDouble() * 35;
+                    fl *= 1.02;
+                }
+            } else if (checkVirtualIncident()) {
+                race += 18 + random.nextDouble() * 30;
+                fl *= 1.015;
+            }
+
             raceTimes.put(driverTeam, race);
             fastestLaps.put(driverTeam, fl);
+        }
+        for (Car car : weekendLineup.values()) {
+            incidentService.applyWear(car, track.getLaps());
         }
 
         List<Map.Entry<String, Double>> finish = raceTimes.entrySet().stream().sorted(Map.Entry.comparingByValue()).toList();
@@ -216,9 +247,8 @@ public class GameSession {
 
             String timeCol = i == 0 ? formatRaceTime(total) : "+" + formatGap(total - leaderTime);
             String fl = formatLap(fastestLaps.get(key));
-            System.out.printf(Locale.US, "%7d | %s | %s | %s | %d%n", i + 1, key, fl, timeCol, pts);
-
-            table.add(String.format(Locale.US, "%d. %s | БК %s | %s | %d очков", i + 1, key, fl, timeCol, pts));
+            System.out.printf("%7d | %s | %s | %s | %d%n", i + 1, key, fl, timeCol, pts);
+            table.add(String.format("%d. %s | БК %s | %s | %d очков", i + 1, key, fl, timeCol, pts));
             addPoints(key, pts);
         }
 
@@ -233,7 +263,7 @@ public class GameSession {
             }
         }
         applyPrize(playerPlace);
-        raceHistory.add(new RaceResult(track.getName(), Weather.DRY, table));
+        raceHistory.add(new RaceResult(track.getName(), weather, table));
     }
 
     private void addPoints(String driverTeam, int pts) {
@@ -256,18 +286,48 @@ public class GameSession {
     }
 
     private String formatLap(double seconds) {
-        int mm = (int) (seconds / 60);
-        int ss = (int) (seconds % 60);
-        int ms = (int) Math.round((seconds - Math.floor(seconds)) * 1000);
-        return String.format(Locale.US, "%02d:%02d:%03d", mm, ss, ms);
+        int totalMillis = (int) Math.round(seconds * 1000);
+        int mm = totalMillis / 60_000;
+        int ss = (totalMillis % 60_000) / 1000;
+        int ms = totalMillis % 1000;
+        return String.format("%02d:%02d.%03d", mm, ss, ms);
     }
+
+    private Map<MainDriver, Car> chooseWeekendLineup() {
+        System.out.println("\nВыбор состава на этап: 2 пилота и 2 разных болида.");
+
+        MainDriver firstDriver = playerController.choose("первого пилота", player.getDrivers());
+        if (firstDriver == null) return Map.of();
+        Car firstCar = playerController.choose("болид для первого пилота", player.getCars());
+        if (firstCar == null || !firstCar.operational()) return Map.of();
+
+        List<MainDriver> secondDriverChoices = new ArrayList<>(player.getDrivers());
+        secondDriverChoices.remove(firstDriver);
+        MainDriver secondDriver = playerController.choose("второго пилота", secondDriverChoices);
+        if (secondDriver == null) return Map.of();
+
+        List<Car> secondCarChoices = new ArrayList<>(player.getCars());
+        secondCarChoices.remove(firstCar);
+        Car secondCar = playerController.choose("болид для второго пилота", secondCarChoices);
+        if (secondCar == null || !secondCar.operational()) return Map.of();
+
+        Map<MainDriver, Car> lineup = new LinkedHashMap<>();
+        lineup.put(firstDriver, firstCar);
+        lineup.put(secondDriver, secondCar);
+        return lineup;
+    }
+
+    private boolean checkVirtualIncident() {
+        return random.nextDouble() < 0.09;
+    }
+
 
     private String formatRaceTime(double seconds) {
         return formatLap(seconds);
     }
 
     private String formatGap(double seconds) {
-        return String.format(Locale.US, "%.3f", seconds);
+        return String.format("%.3f", seconds);
     }
 
     private void applyPrize(int playerPlace) {
@@ -282,17 +342,16 @@ public class GameSession {
         }
     }
     private void initChampionshipEntries() {
-        String[] botDrivers = {
-                "Charles Leclerc", "George Russell", "Lando Norris", "Fernando Alonso", "Pierre Gasly",
-                "Carlos Sainz", "Yuki Tsunoda", "Nico Hulkenberg", "Esteban Ocon", "Gabriel Bortoleto",
-                "Colton Herta", "Alex Palou", "Theo Pourchaire", "Mick Schumacher", "Felipe Drugovich",
-                "Liam Lawson", "Nyck de Vries", "Sacha Fenestraz", "Ayumu Iwasa", "Oliver Goethe", "Zak O'Sullivan"
-        };
-        int i = 0;
-        for (TeamManager bot : botController.getBotTeams()) {
-            teamDrivers.put(bot.getTeamName(), botDrivers[i % botDrivers.length]);
-            i++;
-        }
+        teamDrivers.put("Ferrari", List.of("Charles Leclerc", "Lewis Hamilton"));
+        teamDrivers.put("Mercedes", List.of("George Russell", "Andrea Kimi Antonelli"));
+        teamDrivers.put("McLaren", List.of("Lando Norris", "Oscar Piastri"));
+        teamDrivers.put("Aston Martin", List.of("Fernando Alonso", "Lance Stroll"));
+        teamDrivers.put("Alpine", List.of("Pierre Gasly", "Franco Colapinto"));
+        teamDrivers.put("Williams", List.of("Alexander Albon", "Carlos Sainz"));
+        teamDrivers.put("Racing Bulls", List.of("Yuki Tsunoda", "Isack Hadjar"));
+        teamDrivers.put("Haas", List.of("Esteban Ocon", "Oliver Bearman"));
+        teamDrivers.put("Audi", List.of("Nico Hulkenberg", "Gabriel Bortoleto"));
+        teamDrivers.put("Cadillac", List.of("Valtteri Bottas", "Liam Lawson"));
     }
 
     private void initTracks() {
