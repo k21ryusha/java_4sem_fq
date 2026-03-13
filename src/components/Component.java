@@ -1,13 +1,13 @@
 package components;
 
 public abstract class Component {
-    final String name;
-    final int price;
-    final int quality;
-    double wear;
-    boolean destroyed;
+    protected final String name;
+    protected final int price;
+    protected final int quality;
+    protected double wear;
+    protected boolean destroyed;
 
-    Component(String name, int price, int quality) {
+    public Component(String name, int price, int quality) {
         this.name = name;
         this.price = price;
         this.quality = quality;
@@ -15,11 +15,39 @@ public abstract class Component {
         this.destroyed = false;
     }
 
-    double effectiveQuality() {
+    public String getName() {
+        return name;
+    }
+
+    public int getPrice() {
+        return price;
+    }
+
+    public int getQuality() {
+        return quality;
+    }
+
+    public double getWear() {
+        return wear;
+    }
+
+    public void setWear(double wear) {
+        this.wear = wear;
+    }
+
+    public boolean isDestroyed() {
+        return destroyed;
+    }
+
+    public void setDestroyed(boolean destroyed) {
+        this.destroyed = destroyed;
+    }
+
+    public double effectiveQuality() {
         return destroyed ? 0 : quality * (1 - wear / 100.0);
     }
 
-    String condition() {
+    public String condition() {
         if (destroyed) {
             return "РАЗРУШЕН";
         }
