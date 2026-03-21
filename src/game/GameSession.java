@@ -1,6 +1,7 @@
 package game;
 
 import components.Car;
+import components.Component;
 import economic.MarketService;
 import incidents.IncidentService;
 import race_weekend.RaceResult;
@@ -154,8 +155,35 @@ public class GameSession {
 
     private void runPractice(String title, Track track) {
         System.out.println("\n--- " + title + " ---");
-        double base = 57.0 + random.nextDouble() + track.getLapKm() * 10;
-        System.out.println("Лучшее время сессии: " + formatLap(base));
+        Weather practiceWeather = Weather.values()[random.nextInt(Weather.values().length)];
+        System.out.println("Погода на трассе: " + practiceWeather.getTitle());
+
+        double bestLap = Double.MAX_VALUE;
+
+        for (MainDriver driver : player.getDrivers()) {
+            for (Car car : player.getCars()) {
+                if (!car.operational()) {
+                    continue;
+                }
+                double lap = raceSimulator.simulatePracticeLap(player, car, driver, track, practiceWeather);
+                bestLap = Math.min(bestLap, lap);
+            }
+        }
+
+        for (TeamManager bot : botController.getBotTeams()) {
+            List<String> botDrivers = teamDrivers.getOrDefault(bot.getTeamName(), List.of("BOT-1", "BOT-2"));
+            for (int i = 0; i < botDrivers.size(); i++) {
+                double lap = raceSimulator.generateBotPracticeLap(bot, track, practiceWeather);
+                bestLap = Math.min(bestLap, lap);
+            }
+        }
+
+        if (bestLap == Double.MAX_VALUE) {
+            System.out.println("Лучшее время сессии: н/д");
+            return;
+        }
+
+        System.out.println("Лучшее время сессии: " + formatLap(bestLap));
     }
 
     private Map<String, Double> runQualifying(Track track, Map<MainDriver, Car> weekendLineup, Weather weather) {
@@ -202,36 +230,59 @@ public class GameSession {
         }
 
         List<Map.Entry<String, Double>> grid = quali.entrySet().stream().sorted(Map.Entry.comparingByValue()).toList();
-        Map<String, Double> raceTimes = new HashMap<>();
-        Map<String, Double> fastestLaps = new HashMap<>();
+        List<RaceClassificationEntry> classification = new ArrayList<>();
 
         for (int i = 0; i < grid.size(); i++) {
             String driverTeam = grid.get(i).getKey();
             double qLap = grid.get(i).getValue();
             double race = qLap * track.getLaps() * (1.015 + random.nextDouble() * 0.02) + i * 0.75;
             double fl = qLap * (0.985 + random.nextDouble() * 0.015);
+            boolean finished = true;
+            String status = "";
 
             Car playerCar = playerCarsByEntry.get(driverTeam);
             if (playerCar != null) {
-                if (incidentService.checkIncident(playerCar)) {
+                Component brokenComponent = incidentService.checkMechanicalFailure(playerCar);
+                if (brokenComponent != null) {
+                    finished = false;
+                    status = "DNF";
+                    System.out.println("Сход! " + driverTeam + " выбыл из гонки: отказал компонент " + brokenComponent.getName() + ".");
+                } else if (incidentService.checkIncident(playerCar)) {
                     race += 25 + random.nextDouble() * 35;
                     fl *= 1.02;
                 }
+            } else if (checkVirtualMechanicalFailure()) {
+                finished = false;
+                status = "DNF";
+                System.out.println("Сход! " + driverTeam + " выбыл из гонки: отказал компонент " + randomBotComponentName() + ".");
             } else if (checkVirtualIncident()) {
                 race += 18 + random.nextDouble() * 30;
                 fl *= 1.015;
             }
 
-            raceTimes.put(driverTeam, race);
-            fastestLaps.put(driverTeam, fl);
+            classification.add(new RaceClassificationEntry(driverTeam, race, fl, i, finished, status));
         }
         for (Car car : weekendLineup.values()) {
             incidentService.applyWear(car, track.getLaps());
         }
 
-        List<Map.Entry<String, Double>> finish = raceTimes.entrySet().stream().sorted(Map.Entry.comparingByValue()).toList();
-        double leaderTime = finish.get(0).getValue();
-        String fastestLapOwner = fastestLaps.entrySet().stream().min(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse("");
+        List<RaceClassificationEntry> finish = classification.stream()
+                .sorted((a, b) -> {
+                    if (a.finished != b.finished) {
+                        return Boolean.compare(b.finished, a.finished);
+                    }
+                    if (!a.finished) {
+                        return Integer.compare(a.gridPosition, b.gridPosition);
+                    }
+                    return Double.compare(a.totalTime, b.totalTime);
+                })
+                .toList();
+        double leaderTime = finish.stream().filter(entry -> entry.finished).findFirst().map(entry -> entry.totalTime).orElse(0.0);
+        String fastestLapOwner = finish.stream()
+                .filter(entry -> entry.finished)
+                .min(Comparator.comparingDouble(entry -> entry.fastestLap))
+                .map(entry -> entry.driverTeam)
+                .orElse("");
 
         int[] f1Points = {25, 18, 15, 12, 10, 8, 6, 4, 2, 1};
 
@@ -240,16 +291,36 @@ public class GameSession {
         System.out.println("----------------------------------------------------------------");
 
         for (int i = 0; i < finish.size(); i++) {
-            String key = finish.get(i).getKey();
-            double total = finish.get(i).getValue();
-            int pts = i < f1Points.length ? f1Points[i] : 0;
-            if (i < 10 && key.equals(fastestLapOwner)) pts += 1;
+            RaceClassificationEntry entry = finish.get(i);
+            String key = entry.driverTeam;
+            double total = entry.totalTime;
+            int pts = 0;
+            if (entry.finished && i < f1Points.length) {
+                pts = f1Points[i];
+            }
+            if (entry.finished && i < 10 && key.equals(fastestLapOwner)) pts += 1;
 
-            String timeCol = i == 0 ? formatRaceTime(total) : "+" + formatGap(total - leaderTime);
-            String fl = formatLap(fastestLaps.get(key));
+            String timeCol;
+            if (entry.finished) {
+                if (i == 0) {
+                    timeCol = formatRaceTime(total);
+                } else {
+                    timeCol = "+" + formatGap(total - leaderTime);
+                }
+            } else {
+                timeCol = entry.status;
+            }
+            String fl;
+            if (entry.finished) {
+                fl = formatLap(entry.fastestLap);
+            } else {
+                fl = "---";
+            }
             System.out.printf("%7d | %s | %s | %s | %d%n", i + 1, key, fl, timeCol, pts);
             table.add(String.format("%d. %s | БК %s | %s | %d очков", i + 1, key, fl, timeCol, pts));
-            addPoints(key, pts);
+            if (pts > 0) {
+                addPoints(key, pts);
+            }
         }
 
         printDriverStandings();
@@ -257,7 +328,7 @@ public class GameSession {
 
         int playerPlace = -1;
         for (int i = 0; i < finish.size(); i++) {
-            if (finish.get(i).getKey().contains(player.getTeamName())) {
+            if (finish.get(i).driverTeam.contains(player.getTeamName()) && finish.get(i).finished) {
                 playerPlace = i + 1;
                 break;
             }
@@ -321,6 +392,15 @@ public class GameSession {
         return random.nextDouble() < 0.09;
     }
 
+    private boolean checkVirtualMechanicalFailure() {
+        return random.nextDouble() < 0.035;
+    }
+
+    private String randomBotComponentName() {
+        String[] components = {"двигатель", "трансмиссия", "шасси", "подвеска", "аэродинамика", "шины"};
+        return components[random.nextInt(components.length)];
+    }
+
 
     private String formatRaceTime(double seconds) {
         return formatLap(seconds);
@@ -341,6 +421,25 @@ public class GameSession {
             player.addBudget(40_000); System.out.println("Финиш вне подиума. Утешительные призовые: 40000");
         }
     }
+
+    private static final class RaceClassificationEntry {
+        private final String driverTeam;
+        private final double totalTime;
+        private final double fastestLap;
+        private final int gridPosition;
+        private final boolean finished;
+        private final String status;
+
+        private RaceClassificationEntry(String driverTeam, double totalTime, double fastestLap, int gridPosition, boolean finished, String status) {
+            this.driverTeam = driverTeam;
+            this.totalTime = totalTime;
+            this.fastestLap = fastestLap;
+            this.gridPosition = gridPosition;
+            this.finished = finished;
+            this.status = status;
+        }
+    }
+
     private void initChampionshipEntries() {
         teamDrivers.put("Ferrari", List.of("Charles Leclerc", "Lewis Hamilton"));
         teamDrivers.put("Mercedes", List.of("George Russell", "Andrea Kimi Antonelli"));

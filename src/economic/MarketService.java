@@ -16,11 +16,11 @@ public class MarketService {
 
     public List<Component> generateComponentOffers() {
         List<Component> offers = new ArrayList<>();
-        offers.add(new Engine("Vortex A1", 150_000, rand(65, 90), EngineType.ATMOSPHERIC, rand(700, 820), rand(140, 180)));
+        offers.add(new Engine("Vortex Atmospheric", 150_000, rand(65, 90), EngineType.ATMOSPHERIC, rand(700, 820), rand(140, 180)));
         offers.add(new Engine("Falcon Turbo", 210_000, rand(70, 94), EngineType.TURBO, rand(760, 910), rand(150, 190)));
 
-        offers.add(new Transmission("TR-AT", 90_000, rand(60, 88), EngineType.ATMOSPHERIC, rand(72, 90)));
-        offers.add(new Transmission("TR-TB", 110_000, rand(65, 92), EngineType.TURBO, rand(74, 93)));
+        offers.add(new Transmission("TR-Atmosphere", 90_000, rand(60, 88), EngineType.ATMOSPHERIC, rand(72, 90)));
+        offers.add(new Transmission("TR-Turbo", 110_000, rand(65, 92), EngineType.TURBO, rand(74, 93)));
 
         offers.add(new Chassis("C-Light", 130_000, rand(62, 88), 175, "LIGHT", rand(66, 87)));
         offers.add(new Chassis("C-Heavy", 150_000, rand(65, 91), 210, "HEAVY", rand(64, 85)));
@@ -34,6 +34,8 @@ public class MarketService {
         offers.add(new Tyres("Soft", 55_000, rand(66, 92), "SOFT", rand(82, 96), rand(45, 65), rand(60, 76)));
         offers.add(new Tyres("Medium", 60_000, rand(68, 92), "MEDIUM", rand(74, 88), rand(62, 80), rand(65, 80)));
         offers.add(new Tyres("Hard", 58_000, rand(65, 90), "HARD", rand(68, 84), rand(75, 92), rand(62, 78)));
+        offers.add(new Tyres("Intermediate", 62_000, rand(67, 91), "INTERMEDIATE", rand(70, 84), rand(60, 78), rand(78, 92)));
+        offers.add(new Tyres("Wet", 64_000, rand(68, 92), "WET", rand(66, 80), rand(58, 76), rand(88, 98)));
         return offers;
     }
 

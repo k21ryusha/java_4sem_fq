@@ -44,7 +44,10 @@ public abstract class Component {
     }
 
     public double effectiveQuality() {
-        return destroyed ? 0 : quality * (1 - wear / 100.0);
+        if (destroyed) {
+            return 0;
+        }
+        return quality * (1 - wear / 100.0);
     }
 
     public String condition() {

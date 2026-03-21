@@ -8,10 +8,12 @@ import staff.*;
 import staff.TeamManager;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
-public class PlayerController implements IntInput {
+public class PlayerController {
     private final Scanner scanner;
     private final TeamManager player;
     private final MarketService marketService;
@@ -22,7 +24,6 @@ public class PlayerController implements IntInput {
         this.marketService = marketService;
     }
 
-    @Override
     public int readInt(String prompt) {
         while (true) {
             System.out.print(prompt);
@@ -67,10 +68,15 @@ public class PlayerController implements IntInput {
         List<Chassis> chassisList = filter(Chassis.class);
         List<Suspension> suspensions = filter(Suspension.class);
         List<Aerodynamics> aerodynamicsList = filter(Aerodynamics.class);
-        List<Tyres> tyresList = filter(Tyres.class);
+        List<Tyres> tyreInventory = filter(Tyres.class);
+        Map<String, Tyres> tyrePackage = collectTyrePackage(tyreInventory);
 
-        if (engines.isEmpty() || transmissions.isEmpty() || chassisList.isEmpty() || suspensions.isEmpty() || aerodynamicsList.isEmpty() || tyresList.isEmpty()) {
+        if (engines.isEmpty() || transmissions.isEmpty() || chassisList.isEmpty() || suspensions.isEmpty() || aerodynamicsList.isEmpty()) {
             System.out.println("Не хватает комплектующих для сборки полного болида.");
+            return;
+        }
+        if (tyrePackage.size() < 5) {
+            System.out.println("Для сборки болида нужен полный комплект шин: SOFT, MEDIUM, HARD, INTERMEDIATE и WET.");
             return;
         }
 
@@ -79,16 +85,17 @@ public class PlayerController implements IntInput {
         Chassis ch = choose("шасси", chassisList); if (ch == null) return;
         Suspension sus = choose("подвеску", suspensions); if (sus == null) return;
         Aerodynamics aero = choose("аэродинамику", aerodynamicsList); if (aero == null) return;
-        Tyres tyres = choose("шины", tyresList); if (tyres == null) return;
 
         if (tr.getCompatibleType() != engine.getType()) { System.out.println("Несовместимость: трансмиссия не подходит к типу двигателя."); return; }
         if (engine.getMass() > ch.getMaxEngineMass()) { System.out.println("Несовместимость: двигатель слишком тяжелый для шасси."); return; }
         if (!sus.getCompatibleClass().equals(ch.getChassisClass())) { System.out.println("Несовместимость: подвеска не подходит к классу шасси."); return; }
 
+        Tyres tyres = buildWeekendTyrePackage(tyrePackage);
         Car car = new Car("Car-" + (player.getCars().size() + 1), engine, tr, ch, sus, aero, tyres);
         player.getCars().add(car);
         player.getInventory().remove(engine);player.getInventory().remove(tr);player.getInventory().remove(ch);
-        player.getInventory().remove(sus);player.getInventory().remove(aero);player.getInventory().remove(tyres);
+        player.getInventory().remove(sus);player.getInventory().remove(aero);
+        tyrePackage.values().forEach(player.getInventory()::remove);
         System.out.println("Болид собран: " + car.getName());
     }
     public void hireStaffMenu() {
@@ -114,7 +121,10 @@ public class PlayerController implements IntInput {
         }
     }
     public void hireTechnicalDirector() {
-        List<TechnicalDirector> candidates = marketService.generateTechnicalDirectorCandidates();
+        List<TechnicalDirector> candidates = marketService.generateTechnicalDirectorCandidates().stream()
+                .filter(candidate -> !isStaffAlreadyHired(candidate.getName()))
+                .toList();
+        if (candidates.isEmpty()) { System.out.println("Все доступные технические директора уже наняты."); return; }
         TechnicalDirector selected = chooseStaff("технического директора", candidates);
         if (selected == null) return;
         if (!player.spend(selected.getSalary())) { System.out.println("Недостаточно бюджета."); return; }
@@ -124,7 +134,10 @@ public class PlayerController implements IntInput {
     }
 
     public void hireEngineer() {
-        List<Engineer> candidates = marketService.generateEngineerCandidates();
+        List<Engineer> candidates = marketService.generateEngineerCandidates().stream()
+                .filter(candidate -> !isStaffAlreadyHired(candidate.getName()))
+                .toList();
+        if (candidates.isEmpty()) { System.out.println("Все доступные инженеры уже наняты."); return; }
         Engineer selected = chooseStaff("инженера", candidates);
         if (selected == null) return;
         if (!player.spend(selected.getSalary())) { System.out.println("Недостаточно бюджета."); return; }
@@ -133,7 +146,10 @@ public class PlayerController implements IntInput {
     }
 
     public void hireMechanic() {
-        List<Mechanic> candidates = marketService.generateMechanicCandidates();
+        List<Mechanic> candidates = marketService.generateMechanicCandidates().stream()
+                .filter(candidate -> !isStaffAlreadyHired(candidate.getName()))
+                .toList();
+        if (candidates.isEmpty()) { System.out.println("Все доступные механики уже наняты."); return; }
         Mechanic selected = chooseStaff("механика", candidates);
         if (selected == null) return;
         if (!player.spend(selected.getSalary())) { System.out.println("Недостаточно бюджета."); return; }
@@ -142,7 +158,10 @@ public class PlayerController implements IntInput {
     }
 
     public void hireElectronicsEngineer() {
-        List<ElectronicsEngineer> candidates = marketService.generateElectronicsEngineerCandidates();
+        List<ElectronicsEngineer> candidates = marketService.generateElectronicsEngineerCandidates().stream()
+                .filter(candidate -> !isStaffAlreadyHired(candidate.getName()))
+                .toList();
+        if (candidates.isEmpty()) { System.out.println("Все доступные электронщики уже наняты."); return; }
         ElectronicsEngineer selected = chooseStaff("электронщика", candidates);
         if (selected == null) return;
         if (!player.spend(selected.getSalary())) { System.out.println("Недостаточно бюджета."); return; }
@@ -151,7 +170,10 @@ public class PlayerController implements IntInput {
     }
 
     public void hirePrincipal() {
-        List<Principal> candidates = marketService.generatePrincipalCandidates();
+        List<Principal> candidates = marketService.generatePrincipalCandidates().stream()
+                .filter(candidate -> !isStaffAlreadyHired(candidate.getName()))
+                .toList();
+        if (candidates.isEmpty()) { System.out.println("Все доступные принципалы уже наняты."); return; }
         Principal selected = chooseStaff("принципала", candidates);
         if (selected == null) return;
         if (!player.spend(selected.getSalary())) { System.out.println("Недостаточно бюджета."); return; }
@@ -171,7 +193,10 @@ public class PlayerController implements IntInput {
         return candidates.get(choice - 1);
     }
     public void hirePilot() {
-        List<MainDriver> candidates = marketService.generateDriverCandidates();
+        List<MainDriver> candidates = marketService.generateDriverCandidates().stream()
+                .filter(candidate -> !isDriverAlreadyHired(candidate.getName()))
+                .toList();
+        if (candidates.isEmpty()) { System.out.println("Все доступные пилоты уже наняты."); return; }
         System.out.println("\n--- Школа пилотов ---");
         for (int i = 0; i < candidates.size(); i++) {
             MainDriver d = candidates.get(i);
@@ -191,7 +216,13 @@ public class PlayerController implements IntInput {
         System.out.println("\n--- Ваши болиды ---");
         if (player.getCars().isEmpty()) { System.out.println("Нет собранных болидов."); return; }
         for (Car car : player.getCars()) {
-            System.out.printf("%s | состояние=%s | средний износ=%.1f%%%n", car.getName(), car.operational() ? "исправен" : "неисправен", car.averageWear());
+            String condition;
+            if (car.operational()) {
+                condition = "исправен";
+            } else {
+                condition = "неисправен";
+            }
+            System.out.printf("%s | состояние=%s | средний износ=%.1f%%%n", car.getName(), condition, car.averageWear());
         }
     }
 
@@ -225,6 +256,38 @@ public class PlayerController implements IntInput {
         if (c instanceof Aerodynamics a) return "Аэродинамика " + a.getName() + " (downforce=" + a.getDownforce() + ")";
         if (c instanceof Tyres t) return "Шины " + t.getName() + " (" + t.getCompound() + ")";
         return c.getName();
+    }
+
+    private boolean isDriverAlreadyHired(String name) {
+        return player.getDrivers().stream().anyMatch(driver -> driver.getName().equalsIgnoreCase(name));
+    }
+
+    private boolean isStaffAlreadyHired(String name) {
+        if (player.getPrincipal() != null && player.getPrincipal().getName().equalsIgnoreCase(name)) {
+            return true;
+        }
+        if (player.getTechnicalDirector() != null && player.getTechnicalDirector().getName().equalsIgnoreCase(name)) {
+            return true;
+        }
+        return player.getEngineers().stream().anyMatch(staff -> staff.getName().equalsIgnoreCase(name));
+    }
+
+    private Map<String, Tyres> collectTyrePackage(List<Tyres> tyresList) {
+        Map<String, Tyres> packageByCompound = new LinkedHashMap<>();
+        for (Tyres tyres : tyresList) {
+            packageByCompound.putIfAbsent(tyres.getCompound(), tyres);
+        }
+        return packageByCompound;
+    }
+
+    private Tyres buildWeekendTyrePackage(Map<String, Tyres> tyrePackage) {
+        List<Tyres> selectedSets = new ArrayList<>(tyrePackage.values());
+        int averagePrice = (int) Math.round(selectedSets.stream().mapToInt(Tyres::getPrice).average().orElse(0));
+        int averageQuality = (int) Math.round(selectedSets.stream().mapToInt(Tyres::getQuality).average().orElse(0));
+        int averageGrip = (int) Math.round(selectedSets.stream().mapToInt(Tyres::getGrip).average().orElse(0));
+        int averageDurability = (int) Math.round(selectedSets.stream().mapToInt(Tyres::getDurability).average().orElse(0));
+        int averageRainPerformance = (int) Math.round(selectedSets.stream().mapToInt(Tyres::getRainPerformance).average().orElse(0));
+        return new Tyres("Weekend Package", averagePrice, averageQuality, "FULL_SET", averageGrip, averageDurability, averageRainPerformance);
     }
 
     public <T extends Component> List<T> filter(Class<T> type) {
