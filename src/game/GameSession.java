@@ -154,7 +154,7 @@ public class GameSession {
 
     private void runPractice(String title, Track track) {
         System.out.println("\n--- " + title + " ---");
-        double base = 86 + random.nextDouble() * 6 + track.getLapKm();
+        double base = 57.0 + random.nextDouble() + track.getLapKm() * 10;
         System.out.println("Лучшее время сессии: " + formatLap(base));
     }
 
