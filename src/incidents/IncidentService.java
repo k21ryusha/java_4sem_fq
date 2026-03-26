@@ -35,13 +35,19 @@ public class IncidentService {
     }
 
     public Component checkMechanicalFailure(Car car) {
-        List<Component> candidates = car.components().stream().filter(c -> c.getWear() > 40 && !c.isDestroyed()).toList();
+        List<Component> candidates = car.components().stream()
+                .filter(c -> c.getWear() > 40 && !c.isDestroyed())
+                .toList();
         if (candidates.isEmpty()) {
             return null;
         }
 
-        double highWearCount = candidates.stream().filter(c -> c.getWear() > 55).count();
-        double severeWearCount = candidates.stream().filter(c -> c.getWear() > 75).count();
+        double highWearCount = candidates.stream()
+                .filter(c -> c.getWear() > 55)
+                .count();
+        double severeWearCount = candidates.stream()
+                .filter(c -> c.getWear() > 75)
+                .count();
         double chance = 0.02 + highWearCount * 0.05 + severeWearCount * 0.04;
         if (random.nextDouble() >= chance) {
             return null;
