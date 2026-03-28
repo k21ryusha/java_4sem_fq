@@ -92,28 +92,28 @@ public class MarketService {
     }
     public List<MainDriver> generateDriverCandidates() {
         List<MainDriver> candidates = new ArrayList<>();
-        candidates.add(new MainDriver("Max Verstappen", 190_000, 98, 98, 95, 94));
-        candidates.add(new MainDriver("Sergio Perez", 150_000, 90, 91, 88, 86));
-        candidates.add(new MainDriver("Charles Leclerc", 185_000, 96, 96, 92, 89));
-        candidates.add(new MainDriver("Lewis Hamilton", 185_000, 95, 95, 96, 94));
-        candidates.add(new MainDriver("Lando Norris", 180_000, 95, 94, 91, 88));
-        candidates.add(new MainDriver("Oscar Piastri", 176_000, 93, 93, 90, 87));
-        candidates.add(new MainDriver("George Russell", 177_000, 94, 94, 92, 89));
-        candidates.add(new MainDriver("Andrea Kimi Antonelli", 150_000, 88, 89, 84, 83));
-        candidates.add(new MainDriver("Fernando Alonso", 176_000, 94, 92, 95, 93));
-        candidates.add(new MainDriver("Lance Stroll", 140_000, 84, 85, 82, 80));
-        candidates.add(new MainDriver("Pierre Gasly", 156_000, 90, 90, 88, 85));
-        candidates.add(new MainDriver("Franco Colapinto", 132_000, 82, 83, 79, 78));
-        candidates.add(new MainDriver("Yuki Tsunoda", 152_000, 89, 89, 85, 84));
-        candidates.add(new MainDriver("Isack Hadjar", 130_000, 81, 82, 78, 77));
-        candidates.add(new MainDriver("Esteban Ocon", 154_000, 89, 90, 87, 84));
-        candidates.add(new MainDriver("Oliver Bearman", 134_000, 83, 84, 80, 79));
-        candidates.add(new MainDriver("Nico Hulkenberg", 152_000, 88, 89, 90, 83));
-        candidates.add(new MainDriver("Gabriel Bortoleto", 131_000, 82, 83, 79, 78));
-        candidates.add(new MainDriver("Alexander Albon", 160_000, 91, 90, 87, 85));
-        candidates.add(new MainDriver("Carlos Sainz", 174_000, 93, 93, 91, 88));
-        candidates.add(new MainDriver("Valtteri Bottas", 155_000, 89, 90, 89, 84));
-        candidates.add(new MainDriver("Liam Lawson", 142_000, 85, 86, 81, 80));
+        candidates.add(new MainDriver("Max Verstappen", 190_000, 98, 98, 95, 94,0));
+        candidates.add(new MainDriver("Sergio Perez", 150_000, 90, 91, 88, 86,0));
+        candidates.add(new MainDriver("Charles Leclerc", 185_000, 96, 96, 92, 89,0));
+        candidates.add(new MainDriver("Lewis Hamilton", 185_000, 95, 95, 96, 94,0));
+        candidates.add(new MainDriver("Lando Norris", 180_000, 95, 94, 91, 88,0));
+        candidates.add(new MainDriver("Oscar Piastri", 176_000, 93, 93, 90, 87,0));
+        candidates.add(new MainDriver("George Russell", 177_000, 94, 94, 92, 89,0));
+        candidates.add(new MainDriver("Andrea Kimi Antonelli", 150_000, 88, 89, 84, 83,0));
+        candidates.add(new MainDriver("Fernando Alonso", 176_000, 94, 92, 95, 93,0));
+        candidates.add(new MainDriver("Lance Stroll", 140_000, 84, 85, 82, 80,0));
+        candidates.add(new MainDriver("Pierre Gasly", 156_000, 90, 90, 88, 85,0));
+        candidates.add(new MainDriver("Franco Colapinto", 132_000, 82, 83, 79, 78,0));
+        candidates.add(new MainDriver("Yuki Tsunoda", 152_000, 89, 89, 85, 84,0));
+        candidates.add(new MainDriver("Isack Hadjar", 130_000, 81, 82, 78, 77,0));
+        candidates.add(new MainDriver("Esteban Ocon", 154_000, 89, 90, 87, 84,0));
+        candidates.add(new MainDriver("Oliver Bearman", 134_000, 83, 84, 80, 79,0));
+        candidates.add(new MainDriver("Nico Hulkenberg", 152_000, 88, 89, 90, 83,0));
+        candidates.add(new MainDriver("Gabriel Bortoleto", 131_000, 82, 83, 79, 78,0));
+        candidates.add(new MainDriver("Alexander Albon", 160_000, 91, 90, 87, 85,0));
+        candidates.add(new MainDriver("Carlos Sainz", 174_000, 93, 93, 91, 88,0));
+        candidates.add(new MainDriver("Valtteri Bottas", 155_000, 89, 90, 89, 84,0));
+        candidates.add(new MainDriver("Liam Lawson", 142_000, 85, 86, 81, 80,0));
         return candidates;
     }
 

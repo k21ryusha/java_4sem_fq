@@ -3,12 +3,16 @@ package incidents;
 import components.Car;
 import components.Component;
 import game.PlayerController;
+import staff.MainDriver;
 import staff.TeamManager;
 
 import java.util.List;
 import java.util.Random;
 
 public class IncidentService {
+    public static final int DISCONTENT_INCIDENT_THRESHOLD = 20;
+    public static final double DISCONTENT_INCIDENT_BONUS = 0.10;
+
     private final Random random;
 
     public IncidentService(Random random) {
@@ -29,8 +33,15 @@ public class IncidentService {
     }
 
     public boolean checkIncident(Car car) {
+        return checkIncident(car, null);
+    }
+
+    public boolean checkIncident(Car car, MainDriver driver) {
         double highWearCount = car.components().stream().filter(c -> c.getWear() > 50).count();
         double chance = 0.05 + highWearCount * 0.12;
+        if (driver != null && driver.getDiscontent() >= DISCONTENT_INCIDENT_THRESHOLD) {
+            chance += DISCONTENT_INCIDENT_BONUS;
+        }
         return random.nextDouble() < chance;
     }
 

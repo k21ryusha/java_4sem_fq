@@ -43,7 +43,7 @@ public abstract class Component {
         this.destroyed = destroyed;
     }
 
-    public double effectiveQuality() {
+    public double effectiveQuality(){
         if (destroyed) {
             return 0;
         }

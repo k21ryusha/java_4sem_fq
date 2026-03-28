@@ -14,6 +14,9 @@ import staff.TeamManager;
 import java.util.*;
 
 public class GameSession {
+    private static final int DISCONTENT_STANDINGS_POSITION_THRESHOLD = 10;
+    private static final int DISCONTENT_GAIN_FOR_LOW_STANDINGS = 5;
+
     private final Random random = new Random();
     private final TeamManager player = new TeamManager("Player Racing", 9000_000, 10);
     private final List<Track> tracks = new ArrayList<>();
@@ -247,7 +250,7 @@ public class GameSession {
                     finished = false;
                     status = "DNF";
                     System.out.println("Сход! " + driverTeam + " выбыл из гонки: отказал компонент " + brokenComponent.getName() + ".");
-                } else if (incidentService.checkIncident(playerCar)) {
+                } else if (incidentService.checkIncident(playerCar, findWeekendDriverByEntry(driverTeam, weekendLineup))) {
                     race += 25 + random.nextDouble() * 35;
                     fl *= 1.02;
                 }
@@ -323,6 +326,8 @@ public class GameSession {
             }
         }
 
+        updatePlayerDriversDiscontent();
+
         printDriverStandings();
         printTeamStandings();
 
@@ -346,7 +351,7 @@ public class GameSession {
 
     private void printDriverStandings() {
         System.out.println("\n--- Таблица пилотов ---");
-        driverPoints.entrySet().stream().sorted((a, b) -> Integer.compare(b.getValue(), a.getValue())).limit(22)
+        buildDriverStandings().stream().limit(22)
                 .forEach(e -> System.out.printf("%s - %d%n", e.getKey(), e.getValue()));
     }
 
@@ -388,8 +393,55 @@ public class GameSession {
         return lineup;
     }
 
+    private void updatePlayerDriversDiscontent() {
+        List<Map.Entry<String, Integer>> standings = buildDriverStandings();
+        Map<String, Integer> positions = new HashMap<>();
+        for (int i = 0; i < standings.size(); i++) {
+            positions.put(standings.get(i).getKey(), i + 1);
+        }
+
+        for (MainDriver driver : player.getDrivers()) {
+            int position = positions.getOrDefault(driver.getName(), standings.size() + 1);
+            if (position >= DISCONTENT_STANDINGS_POSITION_THRESHOLD) {
+                driver.addDiscontent(DISCONTENT_GAIN_FOR_LOW_STANDINGS);
+            }
+        }
+    }
+
+    private List<Map.Entry<String, Integer>> buildDriverStandings() {
+        Map<String, Integer> standings = new HashMap<>();
+        for (List<String> drivers : teamDrivers.values()) {
+            for (String driver : drivers) {
+                standings.put(driver, driverPoints.getOrDefault(driver, 0));
+            }
+        }
+        for (MainDriver driver : player.getDrivers()) {
+            standings.put(driver.getName(), driverPoints.getOrDefault(driver.getName(), 0));
+        }
+
+        return standings.entrySet().stream()
+                .sorted((a, b) -> {
+                    int byPoints = Integer.compare(b.getValue(), a.getValue());
+                    if (byPoints != 0) {
+                        return byPoints;
+                    }
+                    return a.getKey().compareToIgnoreCase(b.getKey());
+                })
+                .toList();
+    }
+
     private boolean checkVirtualIncident() {
         return random.nextDouble() < 0.09;
+    }
+
+    private MainDriver findWeekendDriverByEntry(String driverTeam, Map<MainDriver, Car> weekendLineup) {
+        for (MainDriver driver : weekendLineup.keySet()) {
+            String entryName = driver.getName() + " (" + player.getTeamName() + ")";
+            if (entryName.equals(driverTeam)) {
+                return driver;
+            }
+        }
+        return null;
     }
 
     private boolean checkVirtualMechanicalFailure() {
