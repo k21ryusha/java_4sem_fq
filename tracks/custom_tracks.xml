@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<tracks>
+  <track>
+    <name>My Test Track</name>
+    <lapKm>6.5</lapKm>
+    <laps>45</laps>
+    <corners>12</corners>
+    <straights>4</straights>
+    <elevation>15</elevation>
+  </track>
+</tracks>

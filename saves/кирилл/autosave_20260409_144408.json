@@ -1,0 +1,620 @@
+{
+  "playerName": "Кирилл",
+  "player": {
+    "teamName": "Кирилл Racing",
+    "budget": 4453000,
+    "reputation": 10,
+    "inventory": [
+      {
+        "type": "ATMOSPHERIC",
+        "power": 755,
+        "mass": 177,
+        "name": "Vortex Atmospheric",
+        "price": 150000,
+        "quality": 71,
+        "wear": 0.0,
+        "destroyed": false,
+        "componentType": "Engine"
+      },
+      {
+        "type": "ATMOSPHERIC",
+        "power": 717,
+        "mass": 140,
+        "name": "Vortex Atmospheric",
+        "price": 150000,
+        "quality": 86,
+        "wear": 0.0,
+        "destroyed": false,
+        "componentType": "Engine"
+      },
+      {
+        "compatibleType": "ATMOSPHERIC",
+        "efficiency": 83,
+        "name": "TR-Atmosphere",
+        "price": 90000,
+        "quality": 60,
+        "wear": 0.0,
+        "destroyed": false,
+        "componentType": "Transmission"
+      },
+      {
+        "compatibleType": "ATMOSPHERIC",
+        "efficiency": 77,
+        "name": "TR-Atmosphere",
+        "price": 90000,
+        "quality": 88,
+        "wear": 0.0,
+        "destroyed": false,
+        "componentType": "Transmission"
+      },
+      {
+        "maxEngineMass": 175,
+        "chassisClass": "LIGHT",
+        "handling": 67,
+        "name": "C-Light",
+        "price": 130000,
+        "quality": 81,
+        "wear": 0.0,
+        "destroyed": false,
+        "componentType": "Chassis"
+      },
+      {
+        "maxEngineMass": 175,
+        "chassisClass": "LIGHT",
+        "handling": 82,
+        "name": "C-Light",
+        "price": 130000,
+        "quality": 83,
+        "wear": 0.0,
+        "destroyed": false,
+        "componentType": "Chassis"
+      },
+      {
+        "compatibleClass": "LIGHT",
+        "cornerBonus": 89,
+        "name": "S-Light Pro",
+        "price": 80000,
+        "quality": 86,
+        "wear": 0.0,
+        "destroyed": false,
+        "componentType": "Suspension"
+      },
+      {
+        "compatibleClass": "LIGHT",
+        "cornerBonus": 81,
+        "name": "S-Light Pro",
+        "price": 80000,
+        "quality": 64,
+        "wear": 0.0,
+        "destroyed": false,
+        "componentType": "Suspension"
+      }
+    ],
+    "cars": [
+      {
+        "name": "Car-1",
+        "engine": {
+          "type": "ATMOSPHERIC",
+          "power": 745,
+          "mass": 163,
+          "name": "Vortex Atmospheric",
+          "price": 150000,
+          "quality": 84,
+          "wear": 28.883780775232125,
+          "destroyed": false
+        },
+        "transmission": {
+          "compatibleType": "ATMOSPHERIC",
+          "efficiency": 84,
+          "name": "TR-Atmosphere",
+          "price": 90000,
+          "quality": 68,
+          "wear": 31.090531545850503,
+          "destroyed": false
+        },
+        "chassis": {
+          "maxEngineMass": 175,
+          "chassisClass": "LIGHT",
+          "handling": 82,
+          "name": "C-Light",
+          "price": 130000,
+          "quality": 79,
+          "wear": 32.41232444359967,
+          "destroyed": false
+        },
+        "suspension": {
+          "compatibleClass": "LIGHT",
+          "cornerBonus": 82,
+          "name": "S-Light Pro",
+          "price": 80000,
+          "quality": 84,
+          "wear": 28.552695925018227,
+          "destroyed": false
+        },
+        "aerodynamics": {
+          "downforce": 70,
+          "name": "AeroWing",
+          "price": 95000,
+          "quality": 79,
+          "wear": 28.022704462381817,
+          "destroyed": false
+        },
+        "tyres": {
+          "compound": "FULL_SET",
+          "grip": 82,
+          "durability": 68,
+          "rainPerformance": 78,
+          "name": "Weekend Package",
+          "price": 59800,
+          "quality": 79,
+          "wear": 29.79922752991085,
+          "destroyed": false
+        }
+      },
+      {
+        "name": "Car-2",
+        "engine": {
+          "type": "TURBO",
+          "power": 770,
+          "mass": 179,
+          "name": "Falcon Turbo",
+          "price": 210000,
+          "quality": 71,
+          "wear": 30.518198492798778,
+          "destroyed": false
+        },
+        "transmission": {
+          "compatibleType": "TURBO",
+          "efficiency": 82,
+          "name": "TR-Turbo",
+          "price": 110000,
+          "quality": 73,
+          "wear": 31.64834553478068,
+          "destroyed": false
+        },
+        "chassis": {
+          "maxEngineMass": 210,
+          "chassisClass": "HEAVY",
+          "handling": 78,
+          "name": "C-Heavy",
+          "price": 150000,
+          "quality": 74,
+          "wear": 28.03519497132269,
+          "destroyed": false
+        },
+        "suspension": {
+          "compatibleClass": "HEAVY",
+          "cornerBonus": 73,
+          "name": "S-Heavy Pro",
+          "price": 82000,
+          "quality": 66,
+          "wear": 29.07873829066609,
+          "destroyed": false
+        },
+        "aerodynamics": {
+          "downforce": 83,
+          "name": "AeroWing",
+          "price": 95000,
+          "quality": 77,
+          "wear": 31.101963810903236,
+          "destroyed": false
+        },
+        "tyres": {
+          "compound": "FULL_SET",
+          "grip": 83,
+          "durability": 67,
+          "rainPerformance": 75,
+          "name": "Weekend Package",
+          "price": 59800,
+          "quality": 84,
+          "wear": 30.0132160793708,
+          "destroyed": false
+        }
+      },
+      {
+        "name": "Car-3",
+        "engine": {
+          "type": "TURBO",
+          "power": 773,
+          "mass": 166,
+          "name": "Falcon Turbo",
+          "price": 210000,
+          "quality": 87,
+          "wear": 0.0,
+          "destroyed": false
+        },
+        "transmission": {
+          "compatibleType": "TURBO",
+          "efficiency": 92,
+          "name": "TR-Turbo",
+          "price": 110000,
+          "quality": 68,
+          "wear": 0.0,
+          "destroyed": false
+        },
+        "chassis": {
+          "maxEngineMass": 210,
+          "chassisClass": "HEAVY",
+          "handling": 81,
+          "name": "C-Heavy",
+          "price": 150000,
+          "quality": 72,
+          "wear": 0.0,
+          "destroyed": false
+        },
+        "suspension": {
+          "compatibleClass": "HEAVY",
+          "cornerBonus": 78,
+          "name": "S-Heavy Pro",
+          "price": 82000,
+          "quality": 69,
+          "wear": 0.0,
+          "destroyed": false
+        },
+        "aerodynamics": {
+          "downforce": 90,
+          "name": "AeroWing",
+          "price": 95000,
+          "quality": 66,
+          "wear": 0.0,
+          "destroyed": false
+        },
+        "tyres": {
+          "compound": "FULL_SET",
+          "grip": 79,
+          "durability": 67,
+          "rainPerformance": 82,
+          "name": "Weekend Package",
+          "price": 59800,
+          "quality": 82,
+          "wear": 0.0,
+          "destroyed": false
+        }
+      }
+    ],
+    "drivers": [
+      {
+        "cornerSkill": 98,
+        "straightSkill": 98,
+        "consistency": 95,
+        "wetSkill": 94,
+        "discontent": 5,
+        "name": "Max Verstappen",
+        "contractCost": 190000
+      },
+      {
+        "cornerSkill": 90,
+        "straightSkill": 91,
+        "consistency": 88,
+        "wetSkill": 86,
+        "discontent": 5,
+        "name": "Sergio Perez",
+        "contractCost": 150000
+      },
+      {
+        "cornerSkill": 96,
+        "straightSkill": 96,
+        "consistency": 92,
+        "wetSkill": 89,
+        "discontent": 5,
+        "name": "Charles Leclerc",
+        "contractCost": 185000
+      }
+    ],
+    "engineers": [
+      {
+        "name": "James Allison",
+        "salary": 140000,
+        "skill": 93,
+        "staffType": "TechnicalDirector"
+      },
+      {
+        "name": "Enrico Cardile",
+        "salary": 136000,
+        "skill": 93,
+        "staffType": "TechnicalDirector"
+      },
+      {
+        "name": "Adrian Newey",
+        "salary": 150000,
+        "skill": 99,
+        "staffType": "TechnicalDirector"
+      }
+    ],
+    "technicalDirector": {
+      "name": "Adrian Newey",
+      "salary": 150000,
+      "skill": 99
+    }
+  },
+  "raceHistory": [
+    {
+      "trackName": "Japanese Grand Prix | Japan, Suzuka Circuit (Suzuka)",
+      "weather": "SNOW",
+      "table": [
+        "1. Andrea Kimi Antonelli (Mercedes) | БК 01:48.931 | 168:18.457 | 25 очков",
+        "2. Oscar Piastri (McLaren) | БК 01:47.343 | +289,542 | 18 очков",
+        "3. Nico Hulkenberg (Haas) | БК 01:46.847 | +395,670 | 15 очков",
+        "4. Franco Colapinto (Alpine) | БК 01:52.119 | +456,608 | 12 очков",
+        "5. Lando Norris (Ferrari) | БК 01:44.676 | +457,180 | 11 очков",
+        "6. Lewis Hamilton (Ferrari) | БК 01:52.141 | +609,247 | 8 очков",
+        "7. Theo Pourchaire (Cadillac) | БК 01:51.116 | +650,543 | 6 очков",
+        "8. Liam Lawson (Cadillac) | БК 01:50.028 | +650,993 | 4 очков",
+        "9. George Russell (Mercedes) | БК 01:48.214 | +699,272 | 2 очков",
+        "10. Alexander Albon (Williams) | БК 01:50.309 | +702,075 | 1 очков",
+        "11. Yuki Tsunoda (Alpine) | БК 01:53.437 | +762,843 | 0 очков",
+        "12. Carlos Sainz (Williams) | БК 01:52.581 | +801,211 | 0 очков",
+        "13. Isack Hadjar (Racing Bulls) | БК 01:53.361 | +802,531 | 0 очков",
+        "14. Lance Stroll (Aston Martin) | БК 01:51.222 | +816,949 | 0 очков",
+        "15. Oliver Bearman (Haas) | БК 01:53.231 | +886,255 | 0 очков",
+        "16. Esteban Ocon (Racing Bulls) | БК 01:52.416 | +896,543 | 0 очков",
+        "17. Fernando Alonso (McLaren) | БК 01:52.705 | +944,069 | 0 очков",
+        "18. Gabriel Bortoleto (Audi) | БК 01:54.302 | +961,265 | 0 очков",
+        "19. Sergio Perez (Кирилл Racing) | БК 01:56.326 | +1008,688 | 0 очков",
+        "20. Valtteri Bottas (Audi) | БК 01:55.073 | +1129,366 | 0 очков",
+        "21. Max Verstappen (Кирилл Racing) | БК 01:54.595 | +1252,201 | 0 очков",
+        "22. Pierre Gasly (Aston Martin) | БК --- | сход (авария), 11 кр. | 0 очков"
+      ]
+    }
+  ],
+  "driverPoints": {
+    "Alexander Albon": 1,
+    "Andrea Kimi Antonelli": 25,
+    "Franco Colapinto": 12,
+    "Lando Norris": 11,
+    "Theo Pourchaire": 6,
+    "George Russell": 2,
+    "Lewis Hamilton": 8,
+    "Oscar Piastri": 18,
+    "Nico Hulkenberg": 15,
+    "Liam Lawson": 4
+  },
+  "teamPoints": {
+    "Ferrari": 19,
+    "Williams": 1,
+    "Haas": 15,
+    "Alpine": 12,
+    "Mercedes": 27,
+    "McLaren": 18,
+    "Cadillac": 10
+  },
+  "trackLibrary": [
+    {
+      "name": "Australian Grand Prix | Australia, Albert Park Circuit (Melbourne)",
+      "lapKm": 5.278,
+      "laps": 58,
+      "corners": 14,
+      "straights": 3,
+      "elevation": 40
+    },
+    {
+      "name": "Chinese Grand Prix | China, Shanghai International Circuit (Shanghai)",
+      "lapKm": 5.451,
+      "laps": 56,
+      "corners": 16,
+      "straights": 3,
+      "elevation": 10
+    },
+    {
+      "name": "Japanese Grand Prix | Japan, Suzuka Circuit (Suzuka)",
+      "lapKm": 5.807,
+      "laps": 53,
+      "corners": 18,
+      "straights": 3,
+      "elevation": 25
+    },
+    {
+      "name": "Bahrain Grand Prix | Bahrain International Circuit (Sakhir)",
+      "lapKm": 5.412,
+      "laps": 57,
+      "corners": 15,
+      "straights": 4,
+      "elevation": 25
+    },
+    {
+      "name": "Saudi Arabian Grand Prix | Jeddah Corniche Circuit (Jeddah)",
+      "lapKm": 6.174,
+      "laps": 50,
+      "corners": 27,
+      "straights": 4,
+      "elevation": 12
+    },
+    {
+      "name": "Miami Grand Prix | USA, Miami International Autodrome (Miami Gardens)",
+      "lapKm": 5.412,
+      "laps": 57,
+      "corners": 19,
+      "straights": 3,
+      "elevation": 10
+    },
+    {
+      "name": "Canadian Grand Prix | Canada, Circuit Gilles Villeneuve (Montreal)",
+      "lapKm": 4.361,
+      "laps": 70,
+      "corners": 14,
+      "straights": 4,
+      "elevation": 8
+    },
+    {
+      "name": "Monaco Grand Prix | Monaco, Circuit de Monaco",
+      "lapKm": 3.337,
+      "laps": 78,
+      "corners": 19,
+      "straights": 1,
+      "elevation": 35
+    },
+    {
+      "name": "Spanish Grand Prix | Spain, Circuit de Barcelona-Catalunya (Montmelo)",
+      "lapKm": 4.657,
+      "laps": 66,
+      "corners": 14,
+      "straights": 3,
+      "elevation": 30
+    },
+    {
+      "name": "Austrian Grand Prix | Austria, Red Bull Ring (Spielberg)",
+      "lapKm": 4.318,
+      "laps": 71,
+      "corners": 10,
+      "straights": 3,
+      "elevation": 65
+    },
+    {
+      "name": "British Grand Prix | UK, Silverstone Circuit (Silverstone)",
+      "lapKm": 5.891,
+      "laps": 52,
+      "corners": 18,
+      "straights": 4,
+      "elevation": 45
+    },
+    {
+      "name": "Belgian Grand Prix | Belgium, Spa-Francorchamps (Stavelot)",
+      "lapKm": 7.004,
+      "laps": 44,
+      "corners": 19,
+      "straights": 5,
+      "elevation": 100
+    },
+    {
+      "name": "Hungarian Grand Prix | Hungary, Hungaroring (Mogyorod)",
+      "lapKm": 4.381,
+      "laps": 70,
+      "corners": 14,
+      "straights": 2,
+      "elevation": 34
+    },
+    {
+      "name": "Dutch Grand Prix | Netherlands, Circuit Zandvoort (Zandvoort)",
+      "lapKm": 4.259,
+      "laps": 72,
+      "corners": 14,
+      "straights": 2,
+      "elevation": 35
+    },
+    {
+      "name": "Italian Grand Prix | Italy, Monza Circuit (Monza)",
+      "lapKm": 5.793,
+      "laps": 53,
+      "corners": 11,
+      "straights": 4,
+      "elevation": 22
+    },
+    {
+      "name": "Spanish Grand Prix | Spain, Madring (Madrid)",
+      "lapKm": 5.47,
+      "laps": 57,
+      "corners": 22,
+      "straights": 4,
+      "elevation": 18
+    },
+    {
+      "name": "Azerbaijan Grand Prix | Azerbaijan, Baku City Circuit (Baku)",
+      "lapKm": 6.003,
+      "laps": 51,
+      "corners": 20,
+      "straights": 3,
+      "elevation": 15
+    },
+    {
+      "name": "Singapore Grand Prix | Singapore, Marina Bay Street Circuit",
+      "lapKm": 4.94,
+      "laps": 62,
+      "corners": 19,
+      "straights": 2,
+      "elevation": 10
+    },
+    {
+      "name": "United States Grand Prix | USA, Circuit of the Americas (Austin)",
+      "lapKm": 5.513,
+      "laps": 56,
+      "corners": 20,
+      "straights": 4,
+      "elevation": 40
+    },
+    {
+      "name": "Mexico City Grand Prix | Mexico, Autodromo Hermanos Rodriguez (Mexico City)",
+      "lapKm": 4.304,
+      "laps": 71,
+      "corners": 17,
+      "straights": 3,
+      "elevation": 12
+    },
+    {
+      "name": "Sao Paulo Grand Prix | Brazil, Interlagos (Sao Paulo)",
+      "lapKm": 4.309,
+      "laps": 71,
+      "corners": 15,
+      "straights": 3,
+      "elevation": 43
+    },
+    {
+      "name": "Las Vegas Grand Prix | USA, Las Vegas Strip Circuit",
+      "lapKm": 6.201,
+      "laps": 50,
+      "corners": 17,
+      "straights": 3,
+      "elevation": 8
+    },
+    {
+      "name": "Qatar Grand Prix | Qatar, Lusail International Circuit (Lusail)",
+      "lapKm": 5.419,
+      "laps": 57,
+      "corners": 16,
+      "straights": 3,
+      "elevation": 12
+    },
+    {
+      "name": "Abu Dhabi Grand Prix | UAE, Yas Marina Circuit (Abu Dhabi)",
+      "lapKm": 5.281,
+      "laps": 58,
+      "corners": 16,
+      "straights": 3,
+      "elevation": 5
+    },
+    {
+      "name": "My Test Track",
+      "lapKm": 6.5,
+      "laps": 45,
+      "corners": 12,
+      "straights": 4,
+      "elevation": 15
+    },
+    {
+      "name": "Moscow City Circuit",
+      "lapKm": 8.0,
+      "laps": 40,
+      "corners": 23,
+      "straights": 3,
+      "elevation": 65
+    }
+  ],
+  "seasonCalendar": [
+    {
+      "name": "Japanese Grand Prix | Japan, Suzuka Circuit (Suzuka)",
+      "lapKm": 5.807,
+      "laps": 53,
+      "corners": 18,
+      "straights": 3,
+      "elevation": 25
+    },
+    {
+      "name": "Bahrain Grand Prix | Bahrain International Circuit (Sakhir)",
+      "lapKm": 5.412,
+      "laps": 57,
+      "corners": 15,
+      "straights": 4,
+      "elevation": 25
+    },
+    {
+      "name": "Moscow City Circuit",
+      "lapKm": 8.0,
+      "laps": 40,
+      "corners": 23,
+      "straights": 3,
+      "elevation": 65
+    }
+  ],
+  "championshipRound": 1,
+  "parcFermeLocked": true,
+  "seasonSetupCompleted": true
+}

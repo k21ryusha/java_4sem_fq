@@ -1,8 +1,13 @@
 package race_weekend;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.List;
 
-public class RaceResult {
+public class RaceResult implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     private final String trackName;
     private final Weather weather;
     private final List<String> table;

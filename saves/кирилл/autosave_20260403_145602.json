@@ -1,0 +1,515 @@
+{
+  "playerName": "Кирилл",
+  "player": {
+    "teamName": "Кирилл Racing",
+    "budget": 5448000,
+    "reputation": 11,
+    "inventory": [
+      {
+        "type": "ATMOSPHERIC",
+        "power": 807,
+        "mass": 158,
+        "name": "Vortex Atmospheric",
+        "price": 150000,
+        "quality": 68,
+        "wear": 0.0,
+        "destroyed": false,
+        "componentType": "Engine"
+      },
+      {
+        "compatibleType": "ATMOSPHERIC",
+        "efficiency": 88,
+        "name": "TR-Atmosphere",
+        "price": 90000,
+        "quality": 64,
+        "wear": 0.0,
+        "destroyed": false,
+        "componentType": "Transmission"
+      },
+      {
+        "compound": "MEDIUM",
+        "grip": 84,
+        "durability": 63,
+        "rainPerformance": 80,
+        "name": "Medium",
+        "price": 60000,
+        "quality": 72,
+        "wear": 0.0,
+        "destroyed": false,
+        "componentType": "Tyres"
+      }
+    ],
+    "cars": [],
+    "drivers": [
+      {
+        "cornerSkill": 98,
+        "straightSkill": 98,
+        "consistency": 95,
+        "wetSkill": 94,
+        "discontent": 0,
+        "name": "Max Verstappen",
+        "contractCost": 190000
+      },
+      {
+        "cornerSkill": 90,
+        "straightSkill": 91,
+        "consistency": 88,
+        "wetSkill": 86,
+        "discontent": 5,
+        "name": "Sergio Perez",
+        "contractCost": 150000
+      },
+      {
+        "cornerSkill": 96,
+        "straightSkill": 96,
+        "consistency": 92,
+        "wetSkill": 89,
+        "discontent": 5,
+        "name": "Charles Leclerc",
+        "contractCost": 185000
+      }
+    ],
+    "engineers": [
+      {
+        "name": "James Allison",
+        "salary": 140000,
+        "skill": 96,
+        "staffType": "TechnicalDirector"
+      },
+      {
+        "name": "Riccardo Adami",
+        "salary": 109000,
+        "skill": 91,
+        "staffType": "Engineer"
+      }
+    ],
+    "technicalDirector": {
+      "name": "James Allison",
+      "salary": 140000,
+      "skill": 96
+    }
+  },
+  "raceHistory": [
+    {
+      "trackName": "Australian Grand Prix | Australia, Albert Park Circuit (Melbourne)",
+      "weather": "DRY",
+      "table": [
+        "1. Carlos Sainz (Williams) | БК 01:26.753 | 86:10.966 | 26 очков",
+        "2. Alexander Albon (Williams) | БК 01:26.837 | +15,283 | 18 очков",
+        "3. Max Verstappen (Кирилл Racing) | БК 01:27.121 | +40,665 | 15 очков",
+        "4. Gabriel Bortoleto (Audi) | БК 01:28.789 | +69,387 | 12 очков",
+        "5. George Russell (Mercedes) | БК 01:28.007 | +72,911 | 10 очков",
+        "6. Lando Norris (Ferrari) | БК 01:27.740 | +79,354 | 8 очков",
+        "7. Oliver Bearman (Haas) | БК 01:27.712 | +80,789 | 6 очков",
+        "8. Fernando Alonso (McLaren) | БК 01:27.597 | +85,402 | 4 очков",
+        "9. Theo Pourchaire (Cadillac) | БК 01:28.738 | +103,352 | 2 очков",
+        "10. Franco Colapinto (Alpine) | БК 01:28.194 | +107,453 | 1 очков",
+        "11. Lance Stroll (Aston Martin) | БК 01:28.417 | +117,675 | 0 очков",
+        "12. Valtteri Bottas (Audi) | БК 01:28.455 | +120,771 | 0 очков",
+        "13. Yuki Tsunoda (Alpine) | БК 01:28.820 | +137,419 | 0 очков",
+        "14. Pierre Gasly (Aston Martin) | БК 01:28.320 | +141,372 | 0 очков",
+        "15. Andrea Kimi Antonelli (Mercedes) | БК 01:27.820 | +144,607 | 0 очков",
+        "16. Oscar Piastri (McLaren) | БК 01:29.770 | +154,169 | 0 очков",
+        "17. Nico Hulkenberg (Haas) | БК 01:28.045 | +159,509 | 0 очков",
+        "18. Liam Lawson (Cadillac) | БК 01:28.265 | +168,520 | 0 очков",
+        "19. Esteban Ocon (Racing Bulls) | БК 01:29.507 | +199,170 | 0 очков",
+        "20. Sergio Perez (Кирилл Racing) | БК 01:30.660 | +208,101 | 0 очков",
+        "21. Isack Hadjar (Racing Bulls) | БК 01:30.177 | +217,200 | 0 очков",
+        "22. Lewis Hamilton (Ferrari) | БК --- | DNF | 0 очков"
+      ]
+    }
+  ],
+  "driverPoints": {},
+  "teamPoints": {},
+  "trackLibrary": [
+    {
+      "name": "Australian Grand Prix | Australia, Albert Park Circuit (Melbourne)",
+      "lapKm": 5.278,
+      "laps": 58,
+      "corners": 14,
+      "straights": 3,
+      "elevation": 40
+    },
+    {
+      "name": "Chinese Grand Prix | China, Shanghai International Circuit (Shanghai)",
+      "lapKm": 5.451,
+      "laps": 56,
+      "corners": 16,
+      "straights": 3,
+      "elevation": 10
+    },
+    {
+      "name": "Japanese Grand Prix | Japan, Suzuka Circuit (Suzuka)",
+      "lapKm": 5.807,
+      "laps": 53,
+      "corners": 18,
+      "straights": 3,
+      "elevation": 25
+    },
+    {
+      "name": "Bahrain Grand Prix | Bahrain International Circuit (Sakhir)",
+      "lapKm": 5.412,
+      "laps": 57,
+      "corners": 15,
+      "straights": 4,
+      "elevation": 25
+    },
+    {
+      "name": "Saudi Arabian Grand Prix | Jeddah Corniche Circuit (Jeddah)",
+      "lapKm": 6.174,
+      "laps": 50,
+      "corners": 27,
+      "straights": 4,
+      "elevation": 12
+    },
+    {
+      "name": "Miami Grand Prix | USA, Miami International Autodrome (Miami Gardens)",
+      "lapKm": 5.412,
+      "laps": 57,
+      "corners": 19,
+      "straights": 3,
+      "elevation": 10
+    },
+    {
+      "name": "Canadian Grand Prix | Canada, Circuit Gilles Villeneuve (Montreal)",
+      "lapKm": 4.361,
+      "laps": 70,
+      "corners": 14,
+      "straights": 4,
+      "elevation": 8
+    },
+    {
+      "name": "Monaco Grand Prix | Monaco, Circuit de Monaco",
+      "lapKm": 3.337,
+      "laps": 78,
+      "corners": 19,
+      "straights": 1,
+      "elevation": 35
+    },
+    {
+      "name": "Spanish Grand Prix | Spain, Circuit de Barcelona-Catalunya (Montmelo)",
+      "lapKm": 4.657,
+      "laps": 66,
+      "corners": 14,
+      "straights": 3,
+      "elevation": 30
+    },
+    {
+      "name": "Austrian Grand Prix | Austria, Red Bull Ring (Spielberg)",
+      "lapKm": 4.318,
+      "laps": 71,
+      "corners": 10,
+      "straights": 3,
+      "elevation": 65
+    },
+    {
+      "name": "British Grand Prix | UK, Silverstone Circuit (Silverstone)",
+      "lapKm": 5.891,
+      "laps": 52,
+      "corners": 18,
+      "straights": 4,
+      "elevation": 45
+    },
+    {
+      "name": "Belgian Grand Prix | Belgium, Spa-Francorchamps (Stavelot)",
+      "lapKm": 7.004,
+      "laps": 44,
+      "corners": 19,
+      "straights": 5,
+      "elevation": 100
+    },
+    {
+      "name": "Hungarian Grand Prix | Hungary, Hungaroring (Mogyorod)",
+      "lapKm": 4.381,
+      "laps": 70,
+      "corners": 14,
+      "straights": 2,
+      "elevation": 34
+    },
+    {
+      "name": "Dutch Grand Prix | Netherlands, Circuit Zandvoort (Zandvoort)",
+      "lapKm": 4.259,
+      "laps": 72,
+      "corners": 14,
+      "straights": 2,
+      "elevation": 35
+    },
+    {
+      "name": "Italian Grand Prix | Italy, Monza Circuit (Monza)",
+      "lapKm": 5.793,
+      "laps": 53,
+      "corners": 11,
+      "straights": 4,
+      "elevation": 22
+    },
+    {
+      "name": "Spanish Grand Prix | Spain, Madring (Madrid)",
+      "lapKm": 5.47,
+      "laps": 57,
+      "corners": 22,
+      "straights": 4,
+      "elevation": 18
+    },
+    {
+      "name": "Azerbaijan Grand Prix | Azerbaijan, Baku City Circuit (Baku)",
+      "lapKm": 6.003,
+      "laps": 51,
+      "corners": 20,
+      "straights": 3,
+      "elevation": 15
+    },
+    {
+      "name": "Singapore Grand Prix | Singapore, Marina Bay Street Circuit",
+      "lapKm": 4.94,
+      "laps": 62,
+      "corners": 19,
+      "straights": 2,
+      "elevation": 10
+    },
+    {
+      "name": "United States Grand Prix | USA, Circuit of the Americas (Austin)",
+      "lapKm": 5.513,
+      "laps": 56,
+      "corners": 20,
+      "straights": 4,
+      "elevation": 40
+    },
+    {
+      "name": "Mexico City Grand Prix | Mexico, Autodromo Hermanos Rodriguez (Mexico City)",
+      "lapKm": 4.304,
+      "laps": 71,
+      "corners": 17,
+      "straights": 3,
+      "elevation": 12
+    },
+    {
+      "name": "Sao Paulo Grand Prix | Brazil, Interlagos (Sao Paulo)",
+      "lapKm": 4.309,
+      "laps": 71,
+      "corners": 15,
+      "straights": 3,
+      "elevation": 43
+    },
+    {
+      "name": "Las Vegas Grand Prix | USA, Las Vegas Strip Circuit",
+      "lapKm": 6.201,
+      "laps": 50,
+      "corners": 17,
+      "straights": 3,
+      "elevation": 8
+    },
+    {
+      "name": "Qatar Grand Prix | Qatar, Lusail International Circuit (Lusail)",
+      "lapKm": 5.419,
+      "laps": 57,
+      "corners": 16,
+      "straights": 3,
+      "elevation": 12
+    },
+    {
+      "name": "Abu Dhabi Grand Prix | UAE, Yas Marina Circuit (Abu Dhabi)",
+      "lapKm": 5.281,
+      "laps": 58,
+      "corners": 16,
+      "straights": 3,
+      "elevation": 5
+    }
+  ],
+  "seasonCalendar": [
+    {
+      "name": "Australian Grand Prix | Australia, Albert Park Circuit (Melbourne)",
+      "lapKm": 5.278,
+      "laps": 58,
+      "corners": 14,
+      "straights": 3,
+      "elevation": 40
+    },
+    {
+      "name": "Chinese Grand Prix | China, Shanghai International Circuit (Shanghai)",
+      "lapKm": 5.451,
+      "laps": 56,
+      "corners": 16,
+      "straights": 3,
+      "elevation": 10
+    },
+    {
+      "name": "Japanese Grand Prix | Japan, Suzuka Circuit (Suzuka)",
+      "lapKm": 5.807,
+      "laps": 53,
+      "corners": 18,
+      "straights": 3,
+      "elevation": 25
+    },
+    {
+      "name": "Bahrain Grand Prix | Bahrain International Circuit (Sakhir)",
+      "lapKm": 5.412,
+      "laps": 57,
+      "corners": 15,
+      "straights": 4,
+      "elevation": 25
+    },
+    {
+      "name": "Saudi Arabian Grand Prix | Jeddah Corniche Circuit (Jeddah)",
+      "lapKm": 6.174,
+      "laps": 50,
+      "corners": 27,
+      "straights": 4,
+      "elevation": 12
+    },
+    {
+      "name": "Miami Grand Prix | USA, Miami International Autodrome (Miami Gardens)",
+      "lapKm": 5.412,
+      "laps": 57,
+      "corners": 19,
+      "straights": 3,
+      "elevation": 10
+    },
+    {
+      "name": "Canadian Grand Prix | Canada, Circuit Gilles Villeneuve (Montreal)",
+      "lapKm": 4.361,
+      "laps": 70,
+      "corners": 14,
+      "straights": 4,
+      "elevation": 8
+    },
+    {
+      "name": "Monaco Grand Prix | Monaco, Circuit de Monaco",
+      "lapKm": 3.337,
+      "laps": 78,
+      "corners": 19,
+      "straights": 1,
+      "elevation": 35
+    },
+    {
+      "name": "Spanish Grand Prix | Spain, Circuit de Barcelona-Catalunya (Montmelo)",
+      "lapKm": 4.657,
+      "laps": 66,
+      "corners": 14,
+      "straights": 3,
+      "elevation": 30
+    },
+    {
+      "name": "Austrian Grand Prix | Austria, Red Bull Ring (Spielberg)",
+      "lapKm": 4.318,
+      "laps": 71,
+      "corners": 10,
+      "straights": 3,
+      "elevation": 65
+    },
+    {
+      "name": "British Grand Prix | UK, Silverstone Circuit (Silverstone)",
+      "lapKm": 5.891,
+      "laps": 52,
+      "corners": 18,
+      "straights": 4,
+      "elevation": 45
+    },
+    {
+      "name": "Belgian Grand Prix | Belgium, Spa-Francorchamps (Stavelot)",
+      "lapKm": 7.004,
+      "laps": 44,
+      "corners": 19,
+      "straights": 5,
+      "elevation": 100
+    },
+    {
+      "name": "Hungarian Grand Prix | Hungary, Hungaroring (Mogyorod)",
+      "lapKm": 4.381,
+      "laps": 70,
+      "corners": 14,
+      "straights": 2,
+      "elevation": 34
+    },
+    {
+      "name": "Dutch Grand Prix | Netherlands, Circuit Zandvoort (Zandvoort)",
+      "lapKm": 4.259,
+      "laps": 72,
+      "corners": 14,
+      "straights": 2,
+      "elevation": 35
+    },
+    {
+      "name": "Italian Grand Prix | Italy, Monza Circuit (Monza)",
+      "lapKm": 5.793,
+      "laps": 53,
+      "corners": 11,
+      "straights": 4,
+      "elevation": 22
+    },
+    {
+      "name": "Spanish Grand Prix | Spain, Madring (Madrid)",
+      "lapKm": 5.47,
+      "laps": 57,
+      "corners": 22,
+      "straights": 4,
+      "elevation": 18
+    },
+    {
+      "name": "Azerbaijan Grand Prix | Azerbaijan, Baku City Circuit (Baku)",
+      "lapKm": 6.003,
+      "laps": 51,
+      "corners": 20,
+      "straights": 3,
+      "elevation": 15
+    },
+    {
+      "name": "Singapore Grand Prix | Singapore, Marina Bay Street Circuit",
+      "lapKm": 4.94,
+      "laps": 62,
+      "corners": 19,
+      "straights": 2,
+      "elevation": 10
+    },
+    {
+      "name": "United States Grand Prix | USA, Circuit of the Americas (Austin)",
+      "lapKm": 5.513,
+      "laps": 56,
+      "corners": 20,
+      "straights": 4,
+      "elevation": 40
+    },
+    {
+      "name": "Mexico City Grand Prix | Mexico, Autodromo Hermanos Rodriguez (Mexico City)",
+      "lapKm": 4.304,
+      "laps": 71,
+      "corners": 17,
+      "straights": 3,
+      "elevation": 12
+    },
+    {
+      "name": "Sao Paulo Grand Prix | Brazil, Interlagos (Sao Paulo)",
+      "lapKm": 4.309,
+      "laps": 71,
+      "corners": 15,
+      "straights": 3,
+      "elevation": 43
+    },
+    {
+      "name": "Las Vegas Grand Prix | USA, Las Vegas Strip Circuit",
+      "lapKm": 6.201,
+      "laps": 50,
+      "corners": 17,
+      "straights": 3,
+      "elevation": 8
+    },
+    {
+      "name": "Qatar Grand Prix | Qatar, Lusail International Circuit (Lusail)",
+      "lapKm": 5.419,
+      "laps": 57,
+      "corners": 16,
+      "straights": 3,
+      "elevation": 12
+    },
+    {
+      "name": "Abu Dhabi Grand Prix | UAE, Yas Marina Circuit (Abu Dhabi)",
+      "lapKm": 5.281,
+      "laps": 58,
+      "corners": 16,
+      "straights": 3,
+      "elevation": 5
+    }
+  ],
+  "championshipRound": 0,
+  "parcFermeLocked": false,
+  "seasonSetupCompleted": false
+}

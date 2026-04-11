@@ -114,6 +114,14 @@ public class MarketService {
         candidates.add(new MainDriver("Carlos Sainz", 174_000, 93, 93, 91, 88,0));
         candidates.add(new MainDriver("Valtteri Bottas", 155_000, 89, 90, 89, 84,0));
         candidates.add(new MainDriver("Liam Lawson", 142_000, 85, 86, 81, 80,0));
+        candidates.add(new MainDriver("Theo Pourchaire", 136_000, 84, 85, 81, 80,0));
+        candidates.add(new MainDriver("Felipe Drugovich", 138_000, 85, 85, 82, 81,0));
+        candidates.add(new MainDriver("Jack Doohan", 137_000, 84, 84, 80, 79,0));
+        candidates.add(new MainDriver("Mick Schumacher", 145_000, 86, 87, 84, 82,0));
+        candidates.add(new MainDriver("Zane Maloney", 133_000, 82, 83, 79, 78,0));
+        candidates.add(new MainDriver("Frederik Vesti", 139_000, 85, 86, 83, 81,0));
+        candidates.add(new MainDriver("Victor Martins", 134_000, 83, 84, 80, 79,0));
+        candidates.add(new MainDriver("Ayumu Iwasa", 135_000, 84, 84, 81, 80,0));
         return candidates;
     }
 

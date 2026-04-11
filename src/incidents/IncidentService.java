@@ -32,10 +32,6 @@ public class IncidentService {
         }
     }
 
-    public boolean checkIncident(Car car) {
-        return checkIncident(car, null);
-    }
-
     public boolean checkIncident(Car car, MainDriver driver) {
         double highWearCount = car.components().stream().filter(c -> c.getWear() > 50).count();
         double chance = 0.05 + highWearCount * 0.12;

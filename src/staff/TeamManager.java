@@ -3,10 +3,15 @@ package staff;
 import components.Car;
 import components.Component;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TeamManager {
+public class TeamManager implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     private final String teamName;
     private int budget;
     private int reputation;

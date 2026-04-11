@@ -1,53 +1,118 @@
 package game;
 
 import components.Car;
-import components.Component;
 import economic.MarketService;
 import incidents.IncidentService;
+import race_weekend.ParallelRaceEngine;
 import race_weekend.RaceResult;
 import race_weekend.RaceSimulator;
+import race_weekend.RaceStrategyPlan;
 import race_weekend.Track;
+import race_weekend.TrackCatalogManager;
 import race_weekend.Weather;
+import save.GameState;
+import save.SaveManager;
+import save.SaveSlot;
 import staff.MainDriver;
 import staff.TeamManager;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class GameSession {
     private static final int DISCONTENT_STANDINGS_POSITION_THRESHOLD = 10;
     private static final int DISCONTENT_GAIN_FOR_LOW_STANDINGS = 5;
+    private static final int INITIAL_PLAYER_BUDGET = 9000_000;
+    private static final int INITIAL_PLAYER_REPUTATION = 10;
 
     private final Random random = new Random();
-    private final TeamManager player = new TeamManager("Player Racing", 9000_000, 10);
+    private final Scanner scanner;
+    private final String playerName;
+    private final TeamManager player;
+    private final List<Track> trackLibrary = new ArrayList<>();
     private final List<Track> tracks = new ArrayList<>();
+    private final Set<String> sharedCustomTrackNames = new HashSet<>();
     private final List<RaceResult> raceHistory = new ArrayList<>();
 
     private final Map<String, Integer> driverPoints = new HashMap<>();
     private final Map<String, Integer> teamPoints = new HashMap<>();
     private final Map<String, List<String>> teamDrivers = new HashMap<>();
 
+    private final SaveManager saveManager;
+    private final TrackCatalogManager trackCatalogManager;
     private final PlayerController playerController;
     private final BotController botController;
     private final IncidentService incidentService;
     private final RaceSimulator raceSimulator;
+    private final MarketService marketService;
 
     private int championshipRound = 0;
     private boolean parcFermeLocked = false;
+    private boolean seasonSetupCompleted = false;
+    private SurvivalProgress survivalProgress;
 
     public GameSession(Scanner scanner) {
-        MarketService marketService = new MarketService(random);
+        this(scanner, "Player", new SaveManager(), new TrackCatalogManager());
+    }
+
+    public GameSession(Scanner scanner, String playerName, SaveManager saveManager) {
+        this(scanner, playerName, saveManager, new TrackCatalogManager());
+    }
+
+    public GameSession(Scanner scanner, String playerName, SaveManager saveManager, TrackCatalogManager trackCatalogManager) {
+        this.scanner = scanner;
+        this.playerName = playerName;
+        this.player = new TeamManager(playerName + " Racing", INITIAL_PLAYER_BUDGET, INITIAL_PLAYER_REPUTATION);
+        this.saveManager = saveManager;
+        this.trackCatalogManager = trackCatalogManager;
+        this.marketService = new MarketService(random);
         this.playerController = new PlayerController(scanner, player, marketService);
         this.botController = new BotController(random);
         this.incidentService = new IncidentService(random);
         this.raceSimulator = new RaceSimulator(random);
         initTracks();
+        loadSharedCustomTracks();
+        resetSeasonCalendarToCurrentLibrary();
         initChampionshipEntries();
     }
 
+    public GameSession(Scanner scanner, GameState state, SaveManager saveManager) {
+        this(scanner, state, saveManager, new TrackCatalogManager());
+    }
+
+    public GameSession(Scanner scanner, GameState state, SaveManager saveManager, TrackCatalogManager trackCatalogManager) {
+        this.scanner = scanner;
+        this.playerName = state.getPlayerName();
+        this.player = state.getPlayer();
+        this.saveManager = saveManager;
+        this.trackCatalogManager = trackCatalogManager;
+        this.marketService = new MarketService(random);
+        this.playerController = new PlayerController(scanner, player, marketService);
+        this.botController = new BotController(random);
+        this.incidentService = new IncidentService(random);
+        this.raceSimulator = new RaceSimulator(random);
+        initTracks();
+        overlayTracks(state.getTrackLibrary(), false);
+        loadSharedCustomTracks();
+        tracks.addAll(state.getSeasonCalendar());
+        if (tracks.isEmpty()) {
+            resetSeasonCalendarToCurrentLibrary();
+        }
+        initChampionshipEntries();
+        raceHistory.addAll(state.getRaceHistory());
+        driverPoints.putAll(state.getDriverPoints());
+        teamPoints.putAll(state.getTeamPoints());
+        championshipRound = state.getChampionshipRound();
+        parcFermeLocked = state.isParcFermeLocked();
+        seasonSetupCompleted = state.isSeasonSetupCompleted();
+        survivalProgress = state.getSurvivalProgress();
+    }
+
     public void run() {
-        System.out.println("=== Симулятор гоночной команды ===");
+        System.out.println("\nИгрок: " + playerName + " | Команда: " + player.getTeamName());
         boolean running = true;
         while (running) {
+            ensurePreSeasonSetup();
             printMenu();
             int choice = playerController.readInt("Выберите пункт: ");
             switch (choice) {
@@ -72,7 +137,9 @@ public class GameSession {
                     playerController.hireStaffMenu();
                     break;
                 case 5 :
-                    playerController.hirePilot();
+                    if (playerController.hirePilot() != null) {
+                        initChampionshipEntries();
+                    }
                     break;
                 case 6 :
                     playerController.showCars();
@@ -90,6 +157,12 @@ public class GameSession {
                     playerController.showOtherResults(raceHistory);
                     break;
                 case 11 :
+                    saveCurrentProgress(false);
+                    break;
+                case 12 :
+                    launchSurvivalMode();
+                    break;
+                case 13 :
                     running = false;
                     break;
                 default :
@@ -100,8 +173,10 @@ public class GameSession {
     }
 
     private void printMenu() {
-        System.out.println("\nБюджет: " + player.getBudget() + " | Репутация: " + player.getReputation());
+        System.out.println("\nИгрок: " + playerName);
+        System.out.println("Бюджет: " + player.getBudget() + " | Репутация: " + player.getReputation());
         System.out.println("Раунд чемпионата: " + (championshipRound + 1) + "/" + tracks.size());
+        System.out.println("Календарь сезона: " + tracks.size() + " трасс");
         System.out.println("1) Провести этап чемпионата (FP1-FP2-FP3-Quali-Race)");
         System.out.println("2) Купить комплектующие");
         System.out.println("3) Собрать болид");
@@ -112,12 +187,18 @@ public class GameSession {
         System.out.println("8) Просмотреть статистику гонок");
         System.out.println("9) Просмотреть другие команды");
         System.out.println("10) Просмотреть другие результаты");
-        System.out.println("11) Выход");
+        System.out.println("11) Сохранить игру");
+        if (survivalProgress == null) {
+            System.out.println("12) Развлекательный режим: выживание");
+        } else {
+            System.out.println("12) Продолжить режим выживания");
+        }
+        System.out.println("13) Выход");
     }
 
     private void startRaceWeekend() {
-        if (player.getCars().size() < 2 || player.getDrivers().size() < 2 || player.getEngineers().size() < 2) {
-            System.out.println("Минимальные требования не выполнены: нужно 2 болида, 2 пилота и минимум 2 инженера.");
+        if (countOperationalCars() < 3 || player.getDrivers().size() < 3 || player.getEngineers().size() < 2) {
+            System.out.println("Минимальные требования не выполнены: нужно 3 пилота, 3 исправных болида и минимум 2 инженера. В гонке участвуют двое, третий остается запасным.");
             return;
         }
 
@@ -146,14 +227,17 @@ public class GameSession {
         Map<String, Double> qualiTimes = runQualifying(track, weekendLineup, weekendWeather);
 
         parcFermeLocked = true;
-        runRace(track, qualiTimes, weekendLineup, weekendWeather);
+        RaceStrategyPlan strategyPlan = playerController.chooseRaceStrategy();
+        runRace(track, qualiTimes, weekendLineup, weekendWeather, strategyPlan);
 
         championshipRound++;
         if (championshipRound % tracks.size() == 0) {
             System.out.println("\n=== Сезон завершен! Итоговые таблицы чемпионата ===");
             printDriverStandings();
             printTeamStandings();
+            prepareNextSeason();
         }
+        saveCurrentProgress(true);
     }
 
     private void runPractice(String title, Track track) {
@@ -221,101 +305,56 @@ public class GameSession {
         return quali;
     }
 
-    private void runRace(Track track, Map<String, Double> quali, Map<MainDriver, Car> weekendLineup, Weather weather) {
+    private void runRace(Track track,
+                         Map<String, Double> quali,
+                         Map<MainDriver, Car> weekendLineup,
+                         Weather weather,
+                         RaceStrategyPlan strategyPlan) {
         if (quali.isEmpty()) return;
         System.out.println("\n--- Гонка ---");
 
-        Map<String, Car> playerCarsByEntry = new HashMap<>();
-        for (Map.Entry<MainDriver, Car> entry : weekendLineup.entrySet()) {
-            String driverEntry = entry.getKey().getName() + " (" + player.getTeamName() + ")";
-            playerCarsByEntry.put(driverEntry, entry.getValue());
-            incidentService.preRaceMaintenance(player, entry.getValue(), playerController);
-        }
-
-        List<Map.Entry<String, Double>> grid = quali.entrySet().stream().sorted(Map.Entry.comparingByValue()).toList();
-        List<RaceClassificationEntry> classification = new ArrayList<>();
-
-        for (int i = 0; i < grid.size(); i++) {
-            String driverTeam = grid.get(i).getKey();
-            double qLap = grid.get(i).getValue();
-            double race = qLap * track.getLaps() * (1.015 + random.nextDouble() * 0.02) + i * 0.75;
-            double fl = qLap * (0.985 + random.nextDouble() * 0.015);
-            boolean finished = true;
-            String status = "";
-
-            Car playerCar = playerCarsByEntry.get(driverTeam);
-            if (playerCar != null) {
-                Component brokenComponent = incidentService.checkMechanicalFailure(playerCar);
-                if (brokenComponent != null) {
-                    finished = false;
-                    status = "DNF";
-                    System.out.println("Сход! " + driverTeam + " выбыл из гонки: отказал компонент " + brokenComponent.getName() + ".");
-                } else if (incidentService.checkIncident(playerCar, findWeekendDriverByEntry(driverTeam, weekendLineup))) {
-                    race += 25 + random.nextDouble() * 35;
-                    fl *= 1.02;
-                }
-            } else if (checkVirtualMechanicalFailure()) {
-                finished = false;
-                status = "DNF";
-                System.out.println("Сход! " + driverTeam + " выбыл из гонки: отказал компонент " + randomBotComponentName() + ".");
-            } else if (checkVirtualIncident()) {
-                race += 18 + random.nextDouble() * 30;
-                fl *= 1.015;
-            }
-
-            classification.add(new RaceClassificationEntry(driverTeam, race, fl, i, finished, status));
-        }
+        ParallelRaceEngine engine = new ParallelRaceEngine(random);
+        ParallelRaceEngine.RaceSimulationResult simulationResult =
+                engine.simulateRace(track, quali, weekendLineup, player, strategyPlan);
         for (Car car : weekendLineup.values()) {
             incidentService.applyWear(car, track.getLaps());
         }
 
-        List<RaceClassificationEntry> finish = classification.stream()
-                .sorted((a, b) -> {
-                    if (a.finished != b.finished) {
-                        return Boolean.compare(b.finished, a.finished);
-                    }
-                    if (!a.finished) {
-                        return Integer.compare(a.gridPosition, b.gridPosition);
-                    }
-                    return Double.compare(a.totalTime, b.totalTime);
-                })
-                .toList();
-        double leaderTime = finish.stream().filter(entry -> entry.finished).findFirst().map(entry -> entry.totalTime).orElse(0.0);
+        List<ParallelRaceEngine.RaceClassificationEntry> finish = simulationResult.getClassification();
+        double leaderTime = finish.stream().filter(ParallelRaceEngine.RaceClassificationEntry::isFinished)
+                .findFirst()
+                .map(ParallelRaceEngine.RaceClassificationEntry::getTotalTime)
+                .orElse(0.0);
         String fastestLapOwner = finish.stream()
-                .filter(entry -> entry.finished)
-                .min(Comparator.comparingDouble(entry -> entry.fastestLap))
-                .map(entry -> entry.driverTeam)
+                .filter(ParallelRaceEngine.RaceClassificationEntry::isFinished)
+                .min(Comparator.comparingDouble(ParallelRaceEngine.RaceClassificationEntry::getFastestLap))
+                .map(ParallelRaceEngine.RaceClassificationEntry::getDriverTeam)
                 .orElse("");
 
-        int[] f1Points = {25, 18, 15, 12, 10, 8, 6, 4, 2, 1};
-
         List<String> table = new ArrayList<>();
-        System.out.println("\nПозиция | Пилот (Команда) | БК | Время/Отставание | Очки");
-        System.out.println("----------------------------------------------------------------");
+        System.out.println("\nИтоговые результаты:");
+        System.out.println("Позиция | Пилот (Команда) | БК | Время/Статус | Очки");
+        System.out.println("---------------------------------------------------------------");
 
         for (int i = 0; i < finish.size(); i++) {
-            RaceClassificationEntry entry = finish.get(i);
-            String key = entry.driverTeam;
-            double total = entry.totalTime;
-            int pts = 0;
-            if (entry.finished && i < f1Points.length) {
-                pts = f1Points[i];
-            }
-            if (entry.finished && i < 10 && key.equals(fastestLapOwner)) pts += 1;
+            ParallelRaceEngine.RaceClassificationEntry entry = finish.get(i);
+            String key = entry.getDriverTeam();
+            double total = entry.getTotalTime();
+            int pts = entry.getPoints(fastestLapOwner, i);
 
             String timeCol;
-            if (entry.finished) {
+            if (entry.isFinished()) {
                 if (i == 0) {
                     timeCol = formatRaceTime(total);
                 } else {
                     timeCol = "+" + formatGap(total - leaderTime);
                 }
             } else {
-                timeCol = entry.status;
+                timeCol = entry.getStatus() + ", " + entry.getCompletedLaps() + " кр.";
             }
             String fl;
-            if (entry.finished) {
-                fl = formatLap(entry.fastestLap);
+            if (entry.isFinished()) {
+                fl = formatLap(entry.getFastestLap());
             } else {
                 fl = "---";
             }
@@ -333,13 +372,64 @@ public class GameSession {
 
         int playerPlace = -1;
         for (int i = 0; i < finish.size(); i++) {
-            if (finish.get(i).driverTeam.contains(player.getTeamName()) && finish.get(i).finished) {
+            if (finish.get(i).getDriverTeam().contains(player.getTeamName()) && finish.get(i).isFinished()) {
                 playerPlace = i + 1;
                 break;
             }
         }
         applyPrize(playerPlace);
-        raceHistory.add(new RaceResult(track.getName(), weather, table));
+        ParallelRaceEngine.RaceStatistics statistics = simulationResult.getStatistics();
+        System.out.printf("%nСТАТИСТИКА: %d пит-стопов, %d инцидентов, %d смен погоды%n",
+                statistics.getPitStops(), statistics.getIncidents(), statistics.getWeatherChanges());
+        raceHistory.add(new RaceResult(track.getName(), simulationResult.getFinalWeather(), table));
+    }
+
+    private void saveCurrentProgress(boolean autoSave) {
+        GameState state;
+        if (autoSave) {
+            state = buildCurrentState(null);
+        } else {
+            state = buildCurrentState(survivalProgress);
+        }
+
+        SaveSlot slot;
+        if (autoSave) {
+            slot = saveManager.saveAuto(state);
+            System.out.println("Автосохранение создано: " + slot.getDisplayName());
+        } else {
+            slot = saveManager.saveManual(state);
+            System.out.println("Игра сохранена: " + slot.getDisplayName());
+        }
+    }
+
+    private GameState buildCurrentState(SurvivalProgress progress) {
+        return new GameState(
+                playerName,
+                player,
+                raceHistory,
+                driverPoints,
+                teamPoints,
+                trackLibrary,
+                tracks,
+                championshipRound,
+                parcFermeLocked,
+                seasonSetupCompleted,
+                progress
+        );
+    }
+
+    private void launchSurvivalMode() {
+        SurvivalModeSession survivalModeSession = new SurvivalModeSession(
+                scanner,
+                saveManager,
+                random,
+                raceSimulator,
+                playerController,
+                new ArrayList<>(trackLibrary),
+                buildCurrentState(null).deepCopy()
+        );
+        survivalModeSession.run(survivalProgress, botController);
+        survivalProgress = null;
     }
 
     private void addPoints(String driverTeam, int pts) {
@@ -370,7 +460,7 @@ public class GameSession {
     }
 
     private Map<MainDriver, Car> chooseWeekendLineup() {
-        System.out.println("\nВыбор состава на этап: 2 пилота и 2 разных болида.");
+        System.out.println("\nВыбор состава на этап: 2 пилота и 2 разных болида. Третий пилот и третий болид остаются запасными.");
 
         MainDriver firstDriver = playerController.choose("первого пилота", player.getDrivers());
         if (firstDriver == null) return Map.of();
@@ -393,6 +483,12 @@ public class GameSession {
         return lineup;
     }
 
+    private long countOperationalCars() {
+        return player.getCars().stream()
+                .filter(Car::operational)
+                .count();
+    }
+
     private void updatePlayerDriversDiscontent() {
         List<Map.Entry<String, Integer>> standings = buildDriverStandings();
         Map<String, Integer> positions = new HashMap<>();
@@ -403,7 +499,16 @@ public class GameSession {
         for (MainDriver driver : player.getDrivers()) {
             int position = positions.getOrDefault(driver.getName(), standings.size() + 1);
             if (position >= DISCONTENT_STANDINGS_POSITION_THRESHOLD) {
+                int previousDiscontent = driver.getDiscontent();
                 driver.addDiscontent(DISCONTENT_GAIN_FOR_LOW_STANDINGS);
+                int currentDiscontent = driver.getDiscontent();
+                if (currentDiscontent == 0 && previousDiscontent > 0) {
+                    System.out.printf("Недовольство пилота %s достигло максимума и сбросилось до 0.%n",
+                            driver.getName());
+                } else if (currentDiscontent != previousDiscontent) {
+                    System.out.printf("Недовольство пилота %s увеличилось: %d -> %d.%n",
+                            driver.getName(), previousDiscontent, currentDiscontent);
+                }
             }
         }
     }
@@ -430,30 +535,6 @@ public class GameSession {
                 .toList();
     }
 
-    private boolean checkVirtualIncident() {
-        return random.nextDouble() < 0.09;
-    }
-
-    private MainDriver findWeekendDriverByEntry(String driverTeam, Map<MainDriver, Car> weekendLineup) {
-        for (MainDriver driver : weekendLineup.keySet()) {
-            String entryName = driver.getName() + " (" + player.getTeamName() + ")";
-            if (entryName.equals(driverTeam)) {
-                return driver;
-            }
-        }
-        return null;
-    }
-
-    private boolean checkVirtualMechanicalFailure() {
-        return random.nextDouble() < 0.035;
-    }
-
-    private String randomBotComponentName() {
-        String[] components = {"двигатель", "трансмиссия", "шасси", "подвеска", "аэродинамика", "шины"};
-        return components[random.nextInt(components.length)];
-    }
-
-
     private String formatRaceTime(double seconds) {
         return formatLap(seconds);
     }
@@ -474,61 +555,313 @@ public class GameSession {
         }
     }
 
-    private static final class RaceClassificationEntry {
-        private final String driverTeam;
-        private final double totalTime;
-        private final double fastestLap;
-        private final int gridPosition;
-        private final boolean finished;
-        private final String status;
+    private void initChampionshipEntries() {
+        teamDrivers.clear();
 
-        private RaceClassificationEntry(String driverTeam, double totalTime, double fastestLap, int gridPosition, boolean finished, String status) {
-            this.driverTeam = driverTeam;
-            this.totalTime = totalTime;
-            this.fastestLap = fastestLap;
-            this.gridPosition = gridPosition;
-            this.finished = finished;
-            this.status = status;
+        Map<String, List<String>> defaultLineups = new LinkedHashMap<>();
+        defaultLineups.put("Ferrari", List.of("Charles Leclerc", "Lewis Hamilton"));
+        defaultLineups.put("Mercedes", List.of("George Russell", "Andrea Kimi Antonelli"));
+        defaultLineups.put("McLaren", List.of("Lando Norris", "Oscar Piastri"));
+        defaultLineups.put("Aston Martin", List.of("Fernando Alonso", "Lance Stroll"));
+        defaultLineups.put("Alpine", List.of("Pierre Gasly", "Franco Colapinto"));
+        defaultLineups.put("Williams", List.of("Alexander Albon", "Carlos Sainz"));
+        defaultLineups.put("Racing Bulls", List.of("Yuki Tsunoda", "Isack Hadjar"));
+        defaultLineups.put("Haas", List.of("Esteban Ocon", "Oliver Bearman"));
+        defaultLineups.put("Audi", List.of("Nico Hulkenberg", "Gabriel Bortoleto"));
+        defaultLineups.put("Cadillac", List.of("Valtteri Bottas", "Liam Lawson"));
+
+        Set<String> playerDriverNames = player.getDrivers().stream()
+                .map(driver -> driver.getName().toLowerCase(Locale.ROOT))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        Set<String> usedDriverNames = new LinkedHashSet<>(playerDriverNames);
+        List<String> reserveDrivers = marketService.generateDriverCandidates().stream()
+                .map(MainDriver::getName)
+                .toList();
+
+        for (Map.Entry<String, List<String>> entry : defaultLineups.entrySet()) {
+            List<String> assignedDrivers = new ArrayList<>();
+            for (String driverName : entry.getValue()) {
+                assignedDrivers.add(resolveBotDriverName(driverName, reserveDrivers, usedDriverNames));
+            }
+            teamDrivers.put(entry.getKey(), assignedDrivers);
         }
     }
 
-    private void initChampionshipEntries() {
-        teamDrivers.put("Ferrari", List.of("Charles Leclerc", "Lewis Hamilton"));
-        teamDrivers.put("Mercedes", List.of("George Russell", "Andrea Kimi Antonelli"));
-        teamDrivers.put("McLaren", List.of("Lando Norris", "Oscar Piastri"));
-        teamDrivers.put("Aston Martin", List.of("Fernando Alonso", "Lance Stroll"));
-        teamDrivers.put("Alpine", List.of("Pierre Gasly", "Franco Colapinto"));
-        teamDrivers.put("Williams", List.of("Alexander Albon", "Carlos Sainz"));
-        teamDrivers.put("Racing Bulls", List.of("Yuki Tsunoda", "Isack Hadjar"));
-        teamDrivers.put("Haas", List.of("Esteban Ocon", "Oliver Bearman"));
-        teamDrivers.put("Audi", List.of("Nico Hulkenberg", "Gabriel Bortoleto"));
-        teamDrivers.put("Cadillac", List.of("Valtteri Bottas", "Liam Lawson"));
+    private String resolveBotDriverName(String preferredName, List<String> reserveDrivers, Set<String> usedDriverNames) {
+        String normalizedPreferredName = preferredName.toLowerCase(Locale.ROOT);
+        if (!usedDriverNames.contains(normalizedPreferredName)) {
+            usedDriverNames.add(normalizedPreferredName);
+            return preferredName;
+        }
+
+        for (String candidateName : reserveDrivers) {
+            String normalizedCandidateName = candidateName.toLowerCase(Locale.ROOT);
+            if (!usedDriverNames.contains(normalizedCandidateName)) {
+                usedDriverNames.add(normalizedCandidateName);
+                return candidateName;
+            }
+        }
+
+        throw new IllegalStateException("Недостаточно уникальных пилотов для формирования состава чемпионата.");
     }
 
     private void initTracks() {
-        tracks.add(new Track("Australian Grand Prix | Australia, Albert Park Circuit (Melbourne)", 5.278, 58, 14, 3, 40));
-        tracks.add(new Track("Chinese Grand Prix | China, Shanghai International Circuit (Shanghai)", 5.451, 56, 16, 3, 10));
-        tracks.add(new Track("Japanese Grand Prix | Japan, Suzuka Circuit (Suzuka)", 5.807, 53, 18, 3, 25));
-        tracks.add(new Track("Bahrain Grand Prix | Bahrain International Circuit (Sakhir)", 5.412, 57, 15, 4, 25));
-        tracks.add(new Track("Saudi Arabian Grand Prix | Jeddah Corniche Circuit (Jeddah)", 6.174, 50, 27, 4, 12));
-        tracks.add(new Track("Miami Grand Prix | USA, Miami International Autodrome (Miami Gardens)", 5.412, 57, 19, 3, 10));
-        tracks.add(new Track("Canadian Grand Prix | Canada, Circuit Gilles Villeneuve (Montreal)", 4.361, 70, 14, 4, 8));
-        tracks.add(new Track("Monaco Grand Prix | Monaco, Circuit de Monaco", 3.337, 78, 19, 1, 35));
-        tracks.add(new Track("Spanish Grand Prix | Spain, Circuit de Barcelona-Catalunya (Montmelo)", 4.657, 66, 14, 3, 30));
-        tracks.add(new Track("Austrian Grand Prix | Austria, Red Bull Ring (Spielberg)", 4.318, 71, 10, 3, 65));
-        tracks.add(new Track("British Grand Prix | UK, Silverstone Circuit (Silverstone)", 5.891, 52, 18, 4, 45));
-        tracks.add(new Track("Belgian Grand Prix | Belgium, Spa-Francorchamps (Stavelot)", 7.004, 44, 19, 5, 100));
-        tracks.add(new Track("Hungarian Grand Prix | Hungary, Hungaroring (Mogyorod)", 4.381, 70, 14, 2, 34));
-        tracks.add(new Track("Dutch Grand Prix | Netherlands, Circuit Zandvoort (Zandvoort)", 4.259, 72, 14, 2, 35));
-        tracks.add(new Track("Italian Grand Prix | Italy, Monza Circuit (Monza)", 5.793, 53, 11, 4, 22));
-        tracks.add(new Track("Spanish Grand Prix | Spain, Madring (Madrid)", 5.470, 57, 22, 4, 18));
-        tracks.add(new Track("Azerbaijan Grand Prix | Azerbaijan, Baku City Circuit (Baku)", 6.003, 51, 20, 3, 15));
-        tracks.add(new Track("Singapore Grand Prix | Singapore, Marina Bay Street Circuit", 4.940, 62, 19, 2, 10));
-        tracks.add(new Track("United States Grand Prix | USA, Circuit of the Americas (Austin)", 5.513, 56, 20, 4, 40));
-        tracks.add(new Track("Mexico City Grand Prix | Mexico, Autodromo Hermanos Rodriguez (Mexico City)", 4.304, 71, 17, 3, 12));
-        tracks.add(new Track("Sao Paulo Grand Prix | Brazil, Interlagos (Sao Paulo)", 4.309, 71, 15, 3, 43));
-        tracks.add(new Track("Las Vegas Grand Prix | USA, Las Vegas Strip Circuit", 6.201, 50, 17, 3, 8));
-        tracks.add(new Track("Qatar Grand Prix | Qatar, Lusail International Circuit (Lusail)", 5.419, 57, 16, 3, 12));
-        tracks.add(new Track("Abu Dhabi Grand Prix | UAE, Yas Marina Circuit (Abu Dhabi)", 5.281, 58, 16, 3, 5));
+        trackLibrary.add(new Track("Australian Grand Prix | Australia, Albert Park Circuit (Melbourne)", 5.278, 58, 14, 3, 40));
+        trackLibrary.add(new Track("Chinese Grand Prix | China, Shanghai International Circuit (Shanghai)", 5.451, 56, 16, 3, 10));
+        trackLibrary.add(new Track("Japanese Grand Prix | Japan, Suzuka Circuit (Suzuka)", 5.807, 53, 18, 3, 25));
+        trackLibrary.add(new Track("Bahrain Grand Prix | Bahrain International Circuit (Sakhir)", 5.412, 57, 15, 4, 25));
+        trackLibrary.add(new Track("Saudi Arabian Grand Prix | Jeddah Corniche Circuit (Jeddah)", 6.174, 50, 27, 4, 12));
+        trackLibrary.add(new Track("Miami Grand Prix | USA, Miami International Autodrome (Miami Gardens)", 5.412, 57, 19, 3, 10));
+        trackLibrary.add(new Track("Canadian Grand Prix | Canada, Circuit Gilles Villeneuve (Montreal)", 4.361, 70, 14, 4, 8));
+        trackLibrary.add(new Track("Monaco Grand Prix | Monaco, Circuit de Monaco", 3.337, 78, 19, 1, 35));
+        trackLibrary.add(new Track("Spanish Grand Prix | Spain, Circuit de Barcelona-Catalunya (Montmelo)", 4.657, 66, 14, 3, 30));
+        trackLibrary.add(new Track("Austrian Grand Prix | Austria, Red Bull Ring (Spielberg)", 4.318, 71, 10, 3, 65));
+        trackLibrary.add(new Track("British Grand Prix | UK, Silverstone Circuit (Silverstone)", 5.891, 52, 18, 4, 45));
+        trackLibrary.add(new Track("Belgian Grand Prix | Belgium, Spa-Francorchamps (Stavelot)", 7.004, 44, 19, 5, 100));
+        trackLibrary.add(new Track("Hungarian Grand Prix | Hungary, Hungaroring (Mogyorod)", 4.381, 70, 14, 2, 34));
+        trackLibrary.add(new Track("Dutch Grand Prix | Netherlands, Circuit Zandvoort (Zandvoort)", 4.259, 72, 14, 2, 35));
+        trackLibrary.add(new Track("Italian Grand Prix | Italy, Monza Circuit (Monza)", 5.793, 53, 11, 4, 22));
+        trackLibrary.add(new Track("Spanish Grand Prix | Spain, Madring (Madrid)", 5.470, 57, 22, 4, 18));
+        trackLibrary.add(new Track("Azerbaijan Grand Prix | Azerbaijan, Baku City Circuit (Baku)", 6.003, 51, 20, 3, 15));
+        trackLibrary.add(new Track("Singapore Grand Prix | Singapore, Marina Bay Street Circuit", 4.940, 62, 19, 2, 10));
+        trackLibrary.add(new Track("United States Grand Prix | USA, Circuit of the Americas (Austin)", 5.513, 56, 20, 4, 40));
+        trackLibrary.add(new Track("Mexico City Grand Prix | Mexico, Autodromo Hermanos Rodriguez (Mexico City)", 4.304, 71, 17, 3, 12));
+        trackLibrary.add(new Track("Sao Paulo Grand Prix | Brazil, Interlagos (Sao Paulo)", 4.309, 71, 15, 3, 43));
+        trackLibrary.add(new Track("Las Vegas Grand Prix | USA, Las Vegas Strip Circuit", 6.201, 50, 17, 3, 8));
+        trackLibrary.add(new Track("Qatar Grand Prix | Qatar, Lusail International Circuit (Lusail)", 5.419, 57, 16, 3, 12));
+        trackLibrary.add(new Track("Abu Dhabi Grand Prix | UAE, Yas Marina Circuit (Abu Dhabi)", 5.281, 58, 16, 3, 5));
+    }
+
+    private void ensurePreSeasonSetup() {
+        if (seasonSetupCompleted) {
+            return;
+        }
+
+        System.out.println("\n=== Предсезонная настройка ===");
+        boolean configuring = true;
+        while (configuring) {
+            System.out.println("1) Редактировать существующую трассу");
+            System.out.println("2) Создать новую трассу");
+            System.out.println("3) Показать библиотеку трасс");
+            System.out.println("4) Сформировать календарь сезона");
+            System.out.println("5) Оставить полный календарь и начать сезон");
+            int choice = playerController.readInt("Выберите пункт: ");
+            switch (choice) {
+                case 1 -> editExistingTrack();
+                case 2 -> createTrack();
+                case 3 -> showTrackLibrary();
+                case 4 -> configuring = !configureSeasonCalendar();
+                case 5 -> {
+                    resetSeasonCalendarToCurrentLibrary();
+                    seasonSetupCompleted = true;
+                    configuring = false;
+                    System.out.println("Сезон начнется с полного календаря.");
+                }
+                default -> System.out.println("Нет такого пункта.");
+            }
+        }
+    }
+
+    private void showTrackLibrary() {
+        System.out.println("\n--- Библиотека трасс ---");
+        for (int i = 0; i < trackLibrary.size(); i++) {
+            System.out.printf("%d) %s%n", i + 1, describeTrack(trackLibrary.get(i)));
+        }
+    }
+
+    private void editExistingTrack() {
+        showTrackLibrary();
+        int choice = playerController.readInt("Какую трассу редактировать: ");
+        if (choice < 1 || choice > trackLibrary.size()) {
+            System.out.println("Нет такой трассы.");
+            return;
+        }
+
+        Track current = trackLibrary.get(choice - 1);
+        String originalName = current.getName();
+        Track updated = new Track(
+                readTrackName("Название трассы", current.getName()),
+                readDouble("Длина круга в км", current.getLapKm(), 0.1),
+                readInt("Количество кругов", current.getLaps(), 1),
+                readInt("Количество поворотов", current.getCorners(), 1),
+                readInt("Количество прямых", current.getStraights(), 1),
+                readInt("Перепад высот", current.getElevation(), 0)
+        );
+        trackLibrary.set(choice - 1, updated);
+        if (isSharedCustomTrack(originalName)) {
+            trackCatalogManager.updateTrack(originalName, updated);
+            sharedCustomTrackNames.remove(originalName.toLowerCase(Locale.ROOT));
+            sharedCustomTrackNames.add(updated.getName().toLowerCase(Locale.ROOT));
+        }
+        if (!seasonSetupCompleted) {
+            resetSeasonCalendarToCurrentLibrary();
+        }
+        System.out.println("Трасса обновлена: " + updated.getName());
+    }
+
+    private void createTrack() {
+        System.out.println("\n--- Создание трассы ---");
+        Track track = new Track(
+                readTrackName("Название трассы", null),
+                readDouble("Длина круга в км", null, 0.1),
+                readInt("Количество кругов", null, 1),
+                readInt("Количество поворотов", null, 1),
+                readInt("Количество прямых", null, 1),
+                readInt("Перепад высот", null, 0)
+        );
+        trackLibrary.add(track);
+        trackCatalogManager.saveNewTrack(track);
+        sharedCustomTrackNames.add(track.getName().toLowerCase(Locale.ROOT));
+        if (!seasonSetupCompleted) {
+            resetSeasonCalendarToCurrentLibrary();
+        }
+        System.out.println("Новая трасса добавлена: " + track.getName());
+    }
+
+    private boolean configureSeasonCalendar() {
+        showTrackLibrary();
+        System.out.println("Введите номера трасс через запятую в порядке календаря.");
+        String line = scanner.nextLine().trim();
+        if (line.isEmpty()) {
+            System.out.println("Календарь не может быть пустым.");
+            return false;
+        }
+
+        String[] parts = line.split(",");
+        List<Track> selectedTracks = new ArrayList<>();
+        Set<Integer> usedIndexes = new HashSet<>();
+        for (String part : parts) {
+            try {
+                int index = Integer.parseInt(part.trim());
+                if (index < 1 || index > trackLibrary.size()) {
+                    System.out.println("В календаре есть несуществующая трасса.");
+                    return false;
+                }
+                if (!usedIndexes.add(index)) {
+                    System.out.println("Одна и та же трасса не должна повторяться в календаре.");
+                    return false;
+                }
+                selectedTracks.add(trackLibrary.get(index - 1));
+            } catch (NumberFormatException e) {
+                System.out.println("Календарь должен состоять из номеров трасс.");
+                return false;
+            }
+        }
+
+        tracks.clear();
+        tracks.addAll(selectedTracks);
+        seasonSetupCompleted = true;
+        System.out.println("Календарь сезона сформирован на " + tracks.size() + " этап(ов).");
+        return true;
+    }
+
+    private void resetSeasonCalendarToCurrentLibrary() {
+        tracks.clear();
+        tracks.addAll(trackLibrary);
+    }
+
+    private void loadSharedCustomTracks() {
+        overlayTracks(trackCatalogManager.loadCustomTracks(), true);
+    }
+
+    private void overlayTracks(List<Track> sourceTracks, boolean sharedCustom) {
+        for (Track track : sourceTracks) {
+            replaceOrAddTrack(trackLibrary, track);
+            if (sharedCustom) {
+                sharedCustomTrackNames.add(track.getName().toLowerCase(Locale.ROOT));
+            }
+        }
+    }
+
+    private void replaceOrAddTrack(List<Track> destination, Track track) {
+        for (int i = 0; i < destination.size(); i++) {
+            if (destination.get(i).getName().equalsIgnoreCase(track.getName())) {
+                destination.set(i, track);
+                return;
+            }
+        }
+        destination.add(track);
+    }
+
+    private boolean isSharedCustomTrack(String trackName) {
+        return sharedCustomTrackNames.contains(trackName.toLowerCase(Locale.ROOT));
+    }
+
+    private void prepareNextSeason() {
+        player.getCars().clear();
+        driverPoints.clear();
+        teamPoints.clear();
+        championshipRound = 0;
+        parcFermeLocked = false;
+        seasonSetupCompleted = false;
+        resetSeasonCalendarToCurrentLibrary();
+        System.out.println("\nПодготовка к новому сезону: болиды списаны, бюджет, пилоты и персонал сохранены.");
+    }
+
+    private String describeTrack(Track track) {
+        return String.format("%s | %.3f км | кругов=%d | поворотов=%d | прямых=%d | перепад=%d",
+                track.getName(), track.getLapKm(), track.getLaps(), track.getCorners(), track.getStraights(), track.getElevation());
+    }
+
+    private String readTrackName(String label, String currentValue) {
+        while (true) {
+            if (currentValue == null) {
+                System.out.print(label + ": ");
+            } else {
+                System.out.print(label + " [" + currentValue + "]: ");
+            }
+            String line = scanner.nextLine().trim();
+            if (!line.isEmpty()) {
+                return line;
+            }
+            if (currentValue != null) {
+                return currentValue;
+            }
+            System.out.println("Название не должно быть пустым.");
+        }
+    }
+
+    private int readInt(String label, Integer currentValue, int minValue) {
+        while (true) {
+            if (currentValue == null) {
+                System.out.print(label + ": ");
+            } else {
+                System.out.print(label + " [" + currentValue + "]: ");
+            }
+            String line = scanner.nextLine().trim();
+            if (line.isEmpty() && currentValue != null) {
+                return currentValue;
+            }
+            try {
+                int value = Integer.parseInt(line);
+                if (value >= minValue) {
+                    return value;
+                }
+            } catch (NumberFormatException ignored) {
+            }
+            System.out.println("Введите число не меньше " + minValue + ".");
+        }
+    }
+
+    private double readDouble(String label, Double currentValue, double minValue) {
+        while (true) {
+            if (currentValue == null) {
+                System.out.print(label + ": ");
+            } else {
+                System.out.print(label + " [" + currentValue + "]: ");
+            }
+            String line = scanner.nextLine().trim().replace(',', '.');
+            if (line.isEmpty() && currentValue != null) {
+                return currentValue;
+            }
+            try {
+                double value = Double.parseDouble(line);
+                if (value >= minValue) {
+                    return value;
+                }
+            } catch (NumberFormatException ignored) {
+            }
+            System.out.println("Введите число не меньше " + minValue + ".");
+        }
     }
 }

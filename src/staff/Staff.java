@@ -1,6 +1,12 @@
 package staff;
 
-public abstract class Staff {
+import java.io.Serial;
+import java.io.Serializable;
+
+public abstract class Staff implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     protected final String name;
     protected final int salary;
     protected final int skill;

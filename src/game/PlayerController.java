@@ -3,6 +3,7 @@ package game;
 import components.*;
 import economic.MarketService;
 import race_weekend.RaceResult;
+import race_weekend.RaceStrategyPlan;
 import staff.MainDriver;
 import staff.*;
 import staff.TeamManager;
@@ -29,6 +30,25 @@ public class PlayerController {
             System.out.print(prompt);
             String line = scanner.nextLine().trim();
             try { return Integer.parseInt(line);} catch (NumberFormatException e) { System.out.println("Введите число."); }
+        }
+    }
+
+    public int readIntOrDefault(String prompt, int defaultValue) {
+        while (true) {
+            System.out.print(prompt);
+            if (!scanner.hasNextLine()) {
+                System.out.println(defaultValue);
+                return defaultValue;
+            }
+            String line = scanner.nextLine().trim();
+            if (line.isEmpty()) {
+                return defaultValue;
+            }
+            try {
+                return Integer.parseInt(line);
+            } catch (NumberFormatException e) {
+                System.out.println("Введите число.");
+            }
         }
     }
 
@@ -192,11 +212,11 @@ public class PlayerController {
         if (choice <= 0 || choice > candidates.size()) return null;
         return candidates.get(choice - 1);
     }
-    public void hirePilot() {
+    public MainDriver hirePilot() {
         List<MainDriver> candidates = marketService.generateDriverCandidates().stream()
                 .filter(candidate -> !isDriverAlreadyHired(candidate.getName()))
                 .toList();
-        if (candidates.isEmpty()) { System.out.println("Все доступные пилоты уже наняты."); return; }
+        if (candidates.isEmpty()) { System.out.println("Все доступные пилоты уже наняты."); return null; }
         System.out.println("\n--- Школа пилотов ---");
         for (int i = 0; i < candidates.size(); i++) {
             MainDriver d = candidates.get(i);
@@ -205,11 +225,12 @@ public class PlayerController {
         }
         System.out.println("0) Назад");
         int choice = readInt("Кого нанять: ");
-        if (choice <= 0 || choice > candidates.size()) return;
+        if (choice <= 0 || choice > candidates.size()) return null;
         MainDriver selected = candidates.get(choice - 1);
-        if (!player.spend(selected.getContractCost())) { System.out.println("Недостаточно бюджета."); return; }
+        if (!player.spend(selected.getContractCost())) { System.out.println("Недостаточно бюджета."); return null; }
         player.getDrivers().add(selected);
         System.out.println("Нанят пилот: " + selected.getName());
+        return selected;
     }
 
     public void showCars() {
@@ -246,6 +267,19 @@ public class PlayerController {
         System.out.println("\n--- Подробные результаты ---");
         if (history.isEmpty()) { System.out.println("Нет данных."); return; }
         for (String row : history.get(history.size() - 1).getTable()) System.out.println(row);
+    }
+
+    public RaceStrategyPlan chooseRaceStrategy() {
+        System.out.println("\n--- Выбор гоночной стратегии ---");
+        RaceStrategyPlan[] plans = RaceStrategyPlan.values();
+        for (int i = 0; i < plans.length; i++) {
+            System.out.printf("%d) %s | %s%n", i + 1, plans[i].getTitle(), plans[i].getDescription());
+        }
+        int choice = readIntOrDefault("Ваш выбор (по умолчанию 1): ", 1);
+        if (choice < 1 || choice > plans.length) {
+            return RaceStrategyPlan.PRIMARY;
+        }
+        return plans[choice - 1];
     }
 
     private String describeComponent(Component c) {

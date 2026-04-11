@@ -1,6 +1,12 @@
 package components;
 
-public abstract class Component {
+import java.io.Serial;
+import java.io.Serializable;
+
+public abstract class Component implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     protected final String name;
     protected final int price;
     protected final int quality;

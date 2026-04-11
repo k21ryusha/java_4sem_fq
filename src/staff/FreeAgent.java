@@ -1,6 +1,12 @@
 package staff;
 
-public abstract class FreeAgent {
+import java.io.Serial;
+import java.io.Serializable;
+
+public abstract class FreeAgent implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     protected final String name;
     protected final int contractCost;
 

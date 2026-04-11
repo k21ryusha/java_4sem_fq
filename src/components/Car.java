@@ -1,9 +1,14 @@
 package components;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Car {
+public class Car implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     private final String name;
     private final Engine engine;
     private final Transmission transmission;
@@ -47,6 +52,17 @@ public class Car {
 
     public double averageWear() {
         return components().stream().mapToDouble(Component::getWear).average().orElse(0);
+    }
+
+    public int estimatedCombatMass() {
+        // Approximate survival-mode combat mass from the current package of installed components.
+        return 420
+                + engine.getMass()
+                + transmission.getEfficiency()
+                + chassis.getHandling()
+                + suspension.getCornerBonus()
+                + aerodynamics.getDownforce()
+                + tyres.getDurability();
     }
 
     @Override
