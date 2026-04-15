@@ -41,6 +41,7 @@ public class ParallelRaceEngine {
         RaceEventLogger logger = new RaceEventLogger();
         RaceCommentator commentator = new RaceCommentator(logger);
         AtomicBoolean raceActive = new AtomicBoolean(true);
+        RaceClock clock = new RaceClock(10.0, 1L);
         Weather[] raceWeather = raceWeatherValues();
         AtomicReference<Weather> weatherRef = new AtomicReference<>(raceWeather[random.nextInt(raceWeather.length)]);
         AtomicInteger leaderLap = new AtomicInteger(0);
@@ -52,36 +53,39 @@ public class ParallelRaceEngine {
         logger.log(0.0, "Выбранная стратегия игрока: " + playerStrategy.getTitle()
                 + " (" + playerStrategy.getDescription() + ")");
 
-        Thread weatherThread = new Thread(() -> runWeather(track, racers, weatherRef, leaderLap, raceActive, commentator, stats),
+        Thread clockThread = new Thread(() -> clock.run(raceActive), "race-clock");
+        Thread weatherThread = new Thread(() -> runWeather(track, racers, weatherRef, leaderLap, raceActive, commentator, stats, clock),
                 "weather-thread");
-        Thread incidentsThread = new Thread(() -> runIncidents(racers, weatherRef, raceActive, commentator, stats),
+        Thread incidentsThread = new Thread(() -> runIncidents(racers, weatherRef, raceActive, commentator, stats, clock),
                 "incident-thread");
 
         List<Thread> racerThreads = new ArrayList<>();
         for (RacerState racer : racers) {
-            Thread thread = new Thread(() -> runRacer(track, racer, weatherRef, leaderLap, pitBoxManager, raceActive, commentator, stats),
+            Thread thread = new Thread(() -> runRacer(track, racer, weatherRef, leaderLap, pitBoxManager, raceActive, commentator, stats, clock),
                     "racer-" + racer.entryName.replace(' ', '_'));
             racerThreads.add(thread);
         }
 
+        clockThread.start();
         weatherThread.start();
         incidentsThread.start();
         racerThreads.forEach(Thread::start);
 
         Map<String, Integer> previousPositions = buildPositionMap(racers);
+        int observedTick = clock.getCurrentTick();
         while (racers.stream().anyMatch(racer -> !racer.isTerminal())) {
+            observedTick = clock.awaitNextTick(observedTick, raceActive);
             int currentLeaderLap = racers.stream()
                     .mapToInt(RacerState::getCompletedLaps)
                     .max()
                     .orElse(0);
             leaderLap.accumulateAndGet(currentLeaderLap, Math::max);
-            previousPositions = logOvertakes(racers, previousPositions, commentator);
-            sleepSilently(10L);
+            previousPositions = logOvertakes(racers, previousPositions, commentator, clock);
         }
 
         raceActive.set(false);
         joinAll(racerThreads);
-        joinAll(List.of(weatherThread, incidentsThread));
+        joinAll(List.of(weatherThread, incidentsThread, clockThread));
 
         List<RaceClassificationEntry> classification = buildClassification(racers);
         if (!classification.isEmpty()) {
@@ -154,31 +158,39 @@ public class ParallelRaceEngine {
                           PitBoxManager pitBoxManager,
                           AtomicBoolean raceActive,
                           RaceCommentator commentator,
-                          RaceStatistics stats) {
+                          RaceStatistics stats,
+                          RaceClock clock) {
+        racer.beginLap(computeLapTime(track, racer, weatherRef.get()));
+        int observedTick = clock.getCurrentTick();
         while (raceActive.get() && !racer.isTerminal() && racer.getCompletedLaps() < track.getLaps()) {
-            Weather weather = weatherRef.get();
-            double lapTime = computeLapTime(track, racer, weather);
-
-            if (racer.shouldAttemptPit(weather, track)) {
-                if (pitBoxManager.tryAcquireBox(racer, racer.getElapsedSeconds())) {
-                    stats.incrementPitStops();
-                    double pitLoss = 17.0 + racer.getRandom().nextDouble() * 6.0;
-                    racer.applyPitStop(pitLoss);
-                    if (racer.isPlayerControlled()) {
-                        commentator.info(racer.getElapsedSeconds(),
-                                "ПИТ-СТОП: " + racer.getDriverName() + " меняет шины и возвращается в гонку.");
-                    }
-                    pitBoxManager.releaseBox(racer, racer.getElapsedSeconds());
-                }
+            observedTick = clock.awaitNextTick(observedTick, raceActive);
+            if (!raceActive.get() || racer.isTerminal()) {
+                break;
             }
 
-            racer.completeLap(lapTime);
+            racer.advanceBy(clock.getTickSeconds());
             leaderLap.accumulateAndGet(racer.getCompletedLaps(), Math::max);
 
             if (racer.getCompletedLaps() >= track.getLaps()) {
                 racer.finishRace();
+                break;
             }
-            sleepSilently(6L + racer.getRandom().nextInt(7));
+
+            if (!racer.isLapInProgress()) {
+                Weather weather = weatherRef.get();
+                if (racer.shouldAttemptPit(weather, track)
+                        && pitBoxManager.tryAcquireBox(racer, clock.getCurrentTimeSeconds())) {
+                    stats.incrementPitStops();
+                    double pitLoss = 17.0 + racer.getRandom().nextDouble() * 6.0;
+                    racer.applyPitStop(pitLoss);
+                    if (racer.isPlayerControlled()) {
+                        commentator.info(clock.getCurrentTimeSeconds(),
+                                "ПИТ-СТОП: " + racer.getDriverName() + " меняет шины и возвращается в гонку.");
+                    }
+                    pitBoxManager.releaseBox(racer, clock.getCurrentTimeSeconds());
+                }
+                racer.beginLap(computeLapTime(track, racer, weather));
+            }
         }
     }
 
@@ -211,10 +223,13 @@ public class ParallelRaceEngine {
                             AtomicInteger leaderLap,
                             AtomicBoolean raceActive,
                             RaceCommentator commentator,
-                            RaceStatistics stats) {
+                            RaceStatistics stats,
+                            RaceClock clock) {
         int lapInterval = Math.max(3, track.getLaps() / 4);
         int nextChange = lapInterval;
+        int observedTick = clock.getCurrentTick();
         while (raceActive.get()) {
+            observedTick = clock.awaitNextTick(observedTick, raceActive);
             if (leaderLap.get() >= nextChange) {
                 Weather current = weatherRef.get();
                 Weather next = rollNextWeather(current);
@@ -225,10 +240,9 @@ public class ParallelRaceEngine {
                         racer.requireWeatherTyreChange(next);
                     }
                 }
-                commentator.weatherUpdate(estimateCurrentTime(racers), next);
+                commentator.weatherUpdate(clock.getCurrentTimeSeconds(), next);
                 nextChange += lapInterval;
             }
-            sleepSilently(15L);
         }
     }
 
@@ -236,10 +250,17 @@ public class ParallelRaceEngine {
                               AtomicReference<Weather> weatherRef,
                               AtomicBoolean raceActive,
                               RaceCommentator commentator,
-                              RaceStatistics stats) {
+                              RaceStatistics stats,
+                              RaceClock clock) {
         int incidentsLeft = Math.max(2, racers.size() / 8);
+        int observedTick = clock.getCurrentTick();
+        int nextIncidentTick = observedTick + 6;
         while (raceActive.get() && incidentsLeft > 0) {
-            sleepSilently(25L);
+            observedTick = clock.awaitNextTick(observedTick, raceActive);
+            if (observedTick < nextIncidentTick) {
+                continue;
+            }
+            nextIncidentTick = observedTick + 6;
             List<RacerState> active = racers.stream()
                     .filter(RacerState::isRunning)
                     .toList();
@@ -248,7 +269,7 @@ public class ParallelRaceEngine {
             }
             RacerState target = active.get(random.nextInt(active.size()));
             Weather weather = weatherRef.get();
-            double currentTime = target.getElapsedSeconds();
+            double currentTime = clock.getCurrentTimeSeconds();
             if (random.nextDouble() < 0.22) {
                 target.retire("сход (авария)");
                 commentator.incident(currentTime,
@@ -259,6 +280,10 @@ public class ParallelRaceEngine {
                 target.applyIncidentDamage(penalty, perLapSlowdown);
                 commentator.incident(currentTime,
                         target.getEntryName() + " получает повреждения и теряет темп.");
+            }
+            if (weather == Weather.RAIN && random.nextDouble() < 0.25) {
+                commentator.comment(currentTime,
+                        "Дождь делает трассу особенно коварной, механики готовят экстренные решения.");
             }
             stats.incrementIncidents();
             incidentsLeft--;
@@ -298,9 +323,16 @@ public class ParallelRaceEngine {
     }
 
     private int compareRacersLive(RacerState left, RacerState right) {
+        if (left.isFinished() != right.isFinished()) {
+            return Boolean.compare(right.isFinished(), left.isFinished());
+        }
         int byLaps = Integer.compare(right.getCompletedLaps(), left.getCompletedLaps());
         if (byLaps != 0) {
             return byLaps;
+        }
+        int byProgress = Double.compare(right.getLapProgress(), left.getLapProgress());
+        if (byProgress != 0) {
+            return byProgress;
         }
         return Double.compare(left.getElapsedSeconds(), right.getElapsedSeconds());
     }
@@ -318,7 +350,8 @@ public class ParallelRaceEngine {
 
     private Map<String, Integer> logOvertakes(List<RacerState> racers,
                                               Map<String, Integer> previousPositions,
-                                              RaceCommentator commentator) {
+                                              RaceCommentator commentator,
+                                              RaceClock clock) {
         List<RacerState> ordered = racers.stream()
                 .sorted(this::compareRacersLive)
                 .toList();
@@ -329,16 +362,21 @@ public class ParallelRaceEngine {
             currentPositions.put(racer.getEntryName(), currentPosition);
             Integer previousPosition = previousPositions.get(racer.getEntryName());
             if (previousPosition != null
-                    && currentPosition < previousPosition
                     && racer.getCompletedLaps() > 0
                     && racer.isRunning()
                     && racer.isPlayerControlled()
-                    && racer.shouldReportPositionChange()) {
-                commentator.info(racer.getElapsedSeconds(),
-                        "ОБГОН: " + racer.getDriverName() + " поднимается с "
-                                + previousPosition + "-й на " + currentPosition + "-ю позицию.");
+                    && racer.shouldReportPositionChange(currentPosition)) {
+                if (currentPosition < previousPosition) {
+                    commentator.info(clock.getCurrentTimeSeconds(),
+                            "ОБГОН: " + racer.getDriverName() + " поднимается с "
+                                    + previousPosition + "-й на " + currentPosition + "-ю позицию.");
+                } else if (currentPosition > previousPosition) {
+                    commentator.info(clock.getCurrentTimeSeconds(),
+                            "ПОТЕРЯ ПОЗИЦИИ: " + racer.getDriverName() + " откатывается с "
+                                    + previousPosition + "-й на " + currentPosition + "-ю позицию.");
+                }
             }
-            racer.markPositionSnapshotProcessed();
+            racer.markPositionSnapshotProcessed(currentPosition);
         }
         return currentPositions;
     }
@@ -362,13 +400,6 @@ public class ParallelRaceEngine {
 
     private boolean isDryWeather(Weather weather) {
         return weather == Weather.DRY;
-    }
-
-    private double estimateCurrentTime(List<RacerState> racers) {
-        return racers.stream()
-                .mapToDouble(RacerState::getElapsedSeconds)
-                .max()
-                .orElse(0.0);
     }
 
     private Car findPlayerCar(String entryName, Map<MainDriver, Car> weekendLineup, TeamManager player) {
@@ -421,6 +452,54 @@ public class ParallelRaceEngine {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+        }
+    }
+
+    private static final class RaceClock {
+        private final double tickSeconds;
+        private final long tickMillis;
+        private int currentTick;
+
+        private RaceClock(double tickSeconds, long tickMillis) {
+            this.tickSeconds = tickSeconds;
+            this.tickMillis = tickMillis;
+        }
+
+        public void run(AtomicBoolean raceActive) {
+            while (raceActive.get()) {
+                sleepSilently(tickMillis);
+                synchronized (this) {
+                    currentTick++;
+                    notifyAll();
+                }
+            }
+            synchronized (this) {
+                notifyAll();
+            }
+        }
+
+        public synchronized int getCurrentTick() {
+            return currentTick;
+        }
+
+        public synchronized int awaitNextTick(int observedTick, AtomicBoolean raceActive) {
+            while (raceActive.get() && currentTick <= observedTick) {
+                try {
+                    wait(tickMillis * 2L + 1L);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return currentTick;
+                }
+            }
+            return currentTick;
+        }
+
+        public double getTickSeconds() {
+            return tickSeconds;
+        }
+
+        public synchronized double getCurrentTimeSeconds() {
+            return currentTick * tickSeconds;
         }
     }
 
@@ -644,6 +723,9 @@ public class ParallelRaceEngine {
         private volatile boolean expectedWetTyres;
         private volatile boolean mandatoryTyreChange;
         private volatile int lastProcessedPositionLap = -1;
+        private volatile int lastReportedPosition = -1;
+        private volatile double currentLapTime;
+        private volatile double remainingLapSeconds;
 
         private RacerState(String entryName,
                            String driverName,
@@ -673,16 +755,34 @@ public class ParallelRaceEngine {
             this.expectedWetTyres = this.wetTyres;
         }
 
-        public synchronized void completeLap(double lapTime) {
+        public synchronized void beginLap(double lapTime) {
             if (retired || finished) {
                 return;
             }
-            completedLaps++;
-            elapsedSeconds += Math.max(58.0, lapTime);
-            bestLap = Math.min(bestLap, Math.max(58.0, lapTime));
-            tyreWear += 6.0 + random.nextDouble() * 7.0;
-            if (freshTyreLaps > 0) {
-                freshTyreLaps--;
+            currentLapTime = Math.max(58.0, lapTime);
+            remainingLapSeconds = currentLapTime;
+        }
+
+        public synchronized boolean isLapInProgress() {
+            return remainingLapSeconds > 0.0;
+        }
+
+        public synchronized void advanceBy(double tickSeconds) {
+            if (retired || finished || remainingLapSeconds <= 0.0) {
+                return;
+            }
+            double timeSlice = Math.min(tickSeconds, remainingLapSeconds);
+            elapsedSeconds += timeSlice;
+            remainingLapSeconds -= timeSlice;
+            if (remainingLapSeconds <= 0.0) {
+                completedLaps++;
+                bestLap = Math.min(bestLap, currentLapTime);
+                tyreWear += 6.0 + random.nextDouble() * 7.0;
+                if (freshTyreLaps > 0) {
+                    freshTyreLaps--;
+                }
+                currentLapTime = 0.0;
+                remainingLapSeconds = 0.0;
             }
         }
 
@@ -818,6 +918,17 @@ public class ParallelRaceEngine {
             return elapsedSeconds;
         }
 
+        public synchronized double getLapProgress() {
+            if (finished) {
+                return 1.0;
+            }
+            if (currentLapTime <= 0.0) {
+                return 0.0;
+            }
+            double progress = (currentLapTime - remainingLapSeconds) / currentLapTime;
+            return Math.max(0.0, Math.min(1.0, progress));
+        }
+
         public double getBestLap() {
             if (bestLap == Double.MAX_VALUE) {
                 return seedLap;
@@ -845,12 +956,14 @@ public class ParallelRaceEngine {
             return mandatoryTyreChange || wetTyres != expectedWetTyres;
         }
 
-        public boolean shouldReportPositionChange() {
-            return completedLaps > lastProcessedPositionLap;
+        public boolean shouldReportPositionChange(int currentPosition) {
+            return currentPosition != lastReportedPosition
+                    && (completedLaps > lastProcessedPositionLap || finished || retired);
         }
 
-        public void markPositionSnapshotProcessed() {
+        public void markPositionSnapshotProcessed(int currentPosition) {
             lastProcessedPositionLap = completedLaps;
+            lastReportedPosition = currentPosition;
         }
 
         private static boolean isDryWeatherStatic(Weather weather) {

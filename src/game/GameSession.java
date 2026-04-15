@@ -20,6 +20,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class GameSession {
+    private static final int FULL_DISTANCE_LAPS_THRESHOLD = 40;
     private static final int DISCONTENT_STANDINGS_POSITION_THRESHOLD = 10;
     private static final int DISCONTENT_GAIN_FOR_LOW_STANDINGS = 5;
     private static final int INITIAL_PLAYER_BUDGET = 9000_000;
@@ -94,7 +95,9 @@ public class GameSession {
         initTracks();
         overlayTracks(state.getTrackLibrary(), false);
         loadSharedCustomTracks();
-        tracks.addAll(state.getSeasonCalendar());
+        state.getSeasonCalendar().stream()
+                .map(this::normalizeTrackForShortRace)
+                .forEach(tracks::add);
         if (tracks.isEmpty()) {
             resetSeasonCalendarToCurrentLibrary();
         }
@@ -606,30 +609,30 @@ public class GameSession {
     }
 
     private void initTracks() {
-        trackLibrary.add(new Track("Australian Grand Prix | Australia, Albert Park Circuit (Melbourne)", 5.278, 58, 14, 3, 40));
-        trackLibrary.add(new Track("Chinese Grand Prix | China, Shanghai International Circuit (Shanghai)", 5.451, 56, 16, 3, 10));
-        trackLibrary.add(new Track("Japanese Grand Prix | Japan, Suzuka Circuit (Suzuka)", 5.807, 53, 18, 3, 25));
-        trackLibrary.add(new Track("Bahrain Grand Prix | Bahrain International Circuit (Sakhir)", 5.412, 57, 15, 4, 25));
-        trackLibrary.add(new Track("Saudi Arabian Grand Prix | Jeddah Corniche Circuit (Jeddah)", 6.174, 50, 27, 4, 12));
-        trackLibrary.add(new Track("Miami Grand Prix | USA, Miami International Autodrome (Miami Gardens)", 5.412, 57, 19, 3, 10));
-        trackLibrary.add(new Track("Canadian Grand Prix | Canada, Circuit Gilles Villeneuve (Montreal)", 4.361, 70, 14, 4, 8));
-        trackLibrary.add(new Track("Monaco Grand Prix | Monaco, Circuit de Monaco", 3.337, 78, 19, 1, 35));
-        trackLibrary.add(new Track("Spanish Grand Prix | Spain, Circuit de Barcelona-Catalunya (Montmelo)", 4.657, 66, 14, 3, 30));
-        trackLibrary.add(new Track("Austrian Grand Prix | Austria, Red Bull Ring (Spielberg)", 4.318, 71, 10, 3, 65));
-        trackLibrary.add(new Track("British Grand Prix | UK, Silverstone Circuit (Silverstone)", 5.891, 52, 18, 4, 45));
-        trackLibrary.add(new Track("Belgian Grand Prix | Belgium, Spa-Francorchamps (Stavelot)", 7.004, 44, 19, 5, 100));
-        trackLibrary.add(new Track("Hungarian Grand Prix | Hungary, Hungaroring (Mogyorod)", 4.381, 70, 14, 2, 34));
-        trackLibrary.add(new Track("Dutch Grand Prix | Netherlands, Circuit Zandvoort (Zandvoort)", 4.259, 72, 14, 2, 35));
-        trackLibrary.add(new Track("Italian Grand Prix | Italy, Monza Circuit (Monza)", 5.793, 53, 11, 4, 22));
-        trackLibrary.add(new Track("Spanish Grand Prix | Spain, Madring (Madrid)", 5.470, 57, 22, 4, 18));
-        trackLibrary.add(new Track("Azerbaijan Grand Prix | Azerbaijan, Baku City Circuit (Baku)", 6.003, 51, 20, 3, 15));
-        trackLibrary.add(new Track("Singapore Grand Prix | Singapore, Marina Bay Street Circuit", 4.940, 62, 19, 2, 10));
-        trackLibrary.add(new Track("United States Grand Prix | USA, Circuit of the Americas (Austin)", 5.513, 56, 20, 4, 40));
-        trackLibrary.add(new Track("Mexico City Grand Prix | Mexico, Autodromo Hermanos Rodriguez (Mexico City)", 4.304, 71, 17, 3, 12));
-        trackLibrary.add(new Track("Sao Paulo Grand Prix | Brazil, Interlagos (Sao Paulo)", 4.309, 71, 15, 3, 43));
-        trackLibrary.add(new Track("Las Vegas Grand Prix | USA, Las Vegas Strip Circuit", 6.201, 50, 17, 3, 8));
-        trackLibrary.add(new Track("Qatar Grand Prix | Qatar, Lusail International Circuit (Lusail)", 5.419, 57, 16, 3, 12));
-        trackLibrary.add(new Track("Abu Dhabi Grand Prix | UAE, Yas Marina Circuit (Abu Dhabi)", 5.281, 58, 16, 3, 5));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Australian Grand Prix | Australia, Albert Park Circuit (Melbourne)", 5.278, 58, 14, 3, 40)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Chinese Grand Prix | China, Shanghai International Circuit (Shanghai)", 5.451, 56, 16, 3, 10)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Japanese Grand Prix | Japan, Suzuka Circuit (Suzuka)", 5.807, 53, 18, 3, 25)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Bahrain Grand Prix | Bahrain International Circuit (Sakhir)", 5.412, 57, 15, 4, 25)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Saudi Arabian Grand Prix | Jeddah Corniche Circuit (Jeddah)", 6.174, 50, 27, 4, 12)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Miami Grand Prix | USA, Miami International Autodrome (Miami Gardens)", 5.412, 57, 19, 3, 10)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Canadian Grand Prix | Canada, Circuit Gilles Villeneuve (Montreal)", 4.361, 70, 14, 4, 8)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Monaco Grand Prix | Monaco, Circuit de Monaco", 3.337, 78, 19, 1, 35)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Spanish Grand Prix | Spain, Circuit de Barcelona-Catalunya (Montmelo)", 4.657, 66, 14, 3, 30)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Austrian Grand Prix | Austria, Red Bull Ring (Spielberg)", 4.318, 71, 10, 3, 65)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("British Grand Prix | UK, Silverstone Circuit (Silverstone)", 5.891, 52, 18, 4, 45)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Belgian Grand Prix | Belgium, Spa-Francorchamps (Stavelot)", 7.004, 44, 19, 5, 100)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Hungarian Grand Prix | Hungary, Hungaroring (Mogyorod)", 4.381, 70, 14, 2, 34)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Dutch Grand Prix | Netherlands, Circuit Zandvoort (Zandvoort)", 4.259, 72, 14, 2, 35)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Italian Grand Prix | Italy, Monza Circuit (Monza)", 5.793, 53, 11, 4, 22)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Spanish Grand Prix | Spain, Madring (Madrid)", 5.470, 57, 22, 4, 18)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Azerbaijan Grand Prix | Azerbaijan, Baku City Circuit (Baku)", 6.003, 51, 20, 3, 15)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Singapore Grand Prix | Singapore, Marina Bay Street Circuit", 4.940, 62, 19, 2, 10)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("United States Grand Prix | USA, Circuit of the Americas (Austin)", 5.513, 56, 20, 4, 40)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Mexico City Grand Prix | Mexico, Autodromo Hermanos Rodriguez (Mexico City)", 4.304, 71, 17, 3, 12)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Sao Paulo Grand Prix | Brazil, Interlagos (Sao Paulo)", 4.309, 71, 15, 3, 43)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Las Vegas Grand Prix | USA, Las Vegas Strip Circuit", 6.201, 50, 17, 3, 8)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Qatar Grand Prix | Qatar, Lusail International Circuit (Lusail)", 5.419, 57, 16, 3, 12)));
+        trackLibrary.add(normalizeTrackForShortRace(new Track("Abu Dhabi Grand Prix | UAE, Yas Marina Circuit (Abu Dhabi)", 5.281, 58, 16, 3, 5)));
     }
 
     private void ensurePreSeasonSetup() {
@@ -679,14 +682,14 @@ public class GameSession {
 
         Track current = trackLibrary.get(choice - 1);
         String originalName = current.getName();
-        Track updated = new Track(
+        Track updated = normalizeTrackForShortRace(new Track(
                 readTrackName("Название трассы", current.getName()),
                 readDouble("Длина круга в км", current.getLapKm(), 0.1),
                 readInt("Количество кругов", current.getLaps(), 1),
                 readInt("Количество поворотов", current.getCorners(), 1),
                 readInt("Количество прямых", current.getStraights(), 1),
                 readInt("Перепад высот", current.getElevation(), 0)
-        );
+        ));
         trackLibrary.set(choice - 1, updated);
         if (isSharedCustomTrack(originalName)) {
             trackCatalogManager.updateTrack(originalName, updated);
@@ -701,14 +704,14 @@ public class GameSession {
 
     private void createTrack() {
         System.out.println("\n--- Создание трассы ---");
-        Track track = new Track(
+        Track track = normalizeTrackForShortRace(new Track(
                 readTrackName("Название трассы", null),
                 readDouble("Длина круга в км", null, 0.1),
                 readInt("Количество кругов", null, 1),
                 readInt("Количество поворотов", null, 1),
                 readInt("Количество прямых", null, 1),
                 readInt("Перепад высот", null, 0)
-        );
+        ));
         trackLibrary.add(track);
         trackCatalogManager.saveNewTrack(track);
         sharedCustomTrackNames.add(track.getName().toLowerCase(Locale.ROOT));
@@ -766,11 +769,29 @@ public class GameSession {
 
     private void overlayTracks(List<Track> sourceTracks, boolean sharedCustom) {
         for (Track track : sourceTracks) {
-            replaceOrAddTrack(trackLibrary, track);
+            replaceOrAddTrack(trackLibrary, normalizeTrackForShortRace(track));
             if (sharedCustom) {
                 sharedCustomTrackNames.add(track.getName().toLowerCase(Locale.ROOT));
             }
         }
+    }
+
+    private Track normalizeTrackForShortRace(Track track) {
+        int normalizedLaps = track.getLaps();
+        if (normalizedLaps > FULL_DISTANCE_LAPS_THRESHOLD) {
+            normalizedLaps = Math.max(1, normalizedLaps / 2);
+        }
+        if (normalizedLaps == track.getLaps()) {
+            return track;
+        }
+        return new Track(
+                track.getName(),
+                track.getLapKm(),
+                normalizedLaps,
+                track.getCorners(),
+                track.getStraights(),
+                track.getElevation()
+        );
     }
 
     private void replaceOrAddTrack(List<Track> destination, Track track) {

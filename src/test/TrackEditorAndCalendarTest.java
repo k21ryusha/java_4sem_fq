@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Scanner;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class TrackEditorAndCalendarTest {
@@ -80,10 +81,13 @@ public class TrackEditorAndCalendarTest {
         trackLibraryField.setAccessible(true);
         List<?> trackLibrary = (List<?>) trackLibraryField.get(secondSession);
 
-        boolean found = trackLibrary.stream()
+        Track sharedTrack = trackLibrary.stream()
                 .map(Track.class::cast)
-                .anyMatch(track -> track.getName().equals("Shared Track"));
+                .filter(track -> track.getName().equals("Shared Track"))
+                .findFirst()
+                .orElse(null);
 
-        assertTrue(found);
+        assertNotNull(sharedTrack);
+        assertEquals(25, sharedTrack.getLaps());
     }
 }

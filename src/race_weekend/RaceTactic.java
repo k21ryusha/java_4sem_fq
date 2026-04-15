@@ -5,7 +5,6 @@ public class RaceTactic {
     private final double dryModifier;
     private final double wetModifier;
     private final double rainModifier;
-    private final double snowModifier;
     private final double pitThreshold;
     private final double safetyMargin;
 
@@ -13,14 +12,12 @@ public class RaceTactic {
                       double dryModifier,
                       double wetModifier,
                       double rainModifier,
-                      double snowModifier,
                       double pitThreshold,
                       double safetyMargin) {
         this.name = name;
         this.dryModifier = dryModifier;
         this.wetModifier = wetModifier;
         this.rainModifier = rainModifier;
-        this.snowModifier = snowModifier;
         this.pitThreshold = pitThreshold;
         this.safetyMargin = safetyMargin;
     }
@@ -34,7 +31,6 @@ public class RaceTactic {
             case DRY -> dryModifier;
             case WET -> wetModifier;
             case RAIN -> rainModifier;
-            case SNOW -> snowModifier;
         };
     }
 
@@ -42,7 +38,4 @@ public class RaceTactic {
         return pitThreshold;
     }
 
-    public double getSafetyMargin() {
-        return safetyMargin;
-    }
 }
